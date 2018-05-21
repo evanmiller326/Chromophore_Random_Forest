@@ -4,8 +4,4 @@
 
 Data can be found [here](https://scholarworks.boisestate.edu/cme_lab/3/).
 
-### Dependencies
-
-* Numpy
-
-* [MorphCT](https://bitbucket.org/cmelab/morphct/src/master/)
+The [MorphCT](https://bitbucket.org/cmelab/morphct/src/master/) package is used to help extract data from the python pickle files. 
