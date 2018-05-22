@@ -42,7 +42,7 @@ def pbc(positions, box):
     else:
         return pbc(p, box)
 
-def create_data_base(database = 'p3ht.db'):
+def create_data_base(database, systems):
     """
     Create an empty sql database.
     Arguments:
@@ -53,9 +53,12 @@ def create_data_base(database = 'p3ht.db'):
     except:
         print("No {}. Creating New.".format(database))
         pass
+
+    tables = [key for key, pair in systems.items()]
+    print(tables)
     connection = sqlite3.connect(database)
     cursor = connection.cursor()
-    for table in ['crystalline', 'semicrystalline', 'disordered']:
+    for table in tables:
         to_execute = "CREATE TABLE {}( ".format(table)
         to_execute += "chromophoreA INT, "
         to_execute += "chromophoreB INT, "
@@ -455,7 +458,7 @@ if __name__ == "__main__":
     if molecule == 'dbp':
         systems = create_systems()
         database = 'dbp.db'
-    create_data_base(database)
+    create_data_base(database, systems)
     for key, pair in systems.items():
         run_system(key, pair, database)
     #manual_load('crystalline', systems['crystalline'], 0, 1)
