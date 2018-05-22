@@ -107,7 +107,7 @@ def add_to_database(table, data, database):
         for chromophoreA, chromophoreB, distace, deltaE, alignX, alignY, alignZ, registerA, registerB, registerC, TI in chunk:
             query = "INSERT INTO {} VALUES( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);".format(table)
             cursor.execute(query, (chromophoreA, chromophoreB, distace, deltaE, alignX, alignY, alignZ, registerA, registerB, registerC, TI))
-        cursor.execute("COMMIT")
+    connection.commit()
     cursor.close()
     connection.close()
 
@@ -286,7 +286,6 @@ def run_system(table, infile, database):
         database - string, the nameof the database file
     """
     AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter_dict, chromophore_list = hf.load_pickle(infile)
-
     vector_dict = generate_empty_dict(len(chromophore_list))
     #Set up the periodic simulation box into a single variable.
     box = np.array([[AA_morphology_dict['lx'], AA_morphology_dict['ly'], AA_morphology_dict['lz']]])
