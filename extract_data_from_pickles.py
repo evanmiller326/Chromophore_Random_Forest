@@ -34,7 +34,7 @@ def pbc(positions, box):
     """
     p = np.copy(positions)
     for i in range(3):
-        mask = np.absolute(p[i]) > box[i]/2. 
+        mask = np.absolute(p[i]) > box[i]/2.
         if mask:
             p[i] -= np.sign(p[i])*box[i]
     if n_unwrapped(p, box) == 0:
@@ -98,8 +98,8 @@ def add_to_database(table, data, database):
     print("Writing {}".format(table))
     connection = sqlite3.connect(database)
     cursor = connection.cursor()
-    divData = chunks(data)
-    for chunk in divData:
+    div_data = chunks(data)
+    for chunk in div_data:
         cursor.execute("Begin Transaction")
         for chromophoreA, chromophoreB, distace, deltaE, alignX, alignY, alignZ, registerA, registerB, registerC, TI in chunk:
             query = "INSERT INTO {} VALUES( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);".format(table)
@@ -240,15 +240,15 @@ def generate_empty_dict(N):
 
     return vector_dict
 
-def fill_dict(vector_dict, chromophoreList, AAMorphologyDict, box, database):
+def fill_dict(vector_dict, chromophore_list, AA_morphology_dict, box, database):
     """
     Iterate through the chromophore list and
     calculate the vectors describing the chromophore
     orientations.
     Requires:
         vector_dict - empty dictionary
-        chromophoreList - list of all chromophore data
-        AAMorphologyDict - Dictionary of morphology data
+        chromophore_list - list of all chromophore data
+        AA_morphology_dict - Dictionary of morphology data
         box - array for the simulation box
         database - string for the database
     Returns:
@@ -262,11 +262,11 @@ def fill_dict(vector_dict, chromophoreList, AAMorphologyDict, box, database):
     if database == 'DBP.db':
         Nchrom = 500
     else:
-        Nchrom = len(chromophoreList)
+        Nchrom = len(chromophore_list)
 
     #Get the vectors for all the chromophores:
-    for i, chromophore in enumerate(chromophoreList[:Nchrom]):
-        v1, v2, v3 = generate_vectors(AAMorphologyDict['type'], chromophore.CGIDs, AAMorphologyDict['position'], box)
+    for i, chromophore in enumerate(chromophore_list[:Nchrom]):
+        v1, v2, v3 = generate_vectors(AA_morphology_dict['type'], chromophore.CGIDs, AA_morphology_dict['position'], box)
         #Write the vectors to the dictionary.
         vector_dict[i]['vec1'] = v1
         vector_dict[i]['vec2'] = v2
@@ -282,36 +282,36 @@ def run_system(table, infile, database):
         infile - string, the name of the pickle file
         database - string, the nameof the database file
     """
-    AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = hf.loadPickle(infile)
+    AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter_dict, chromophore_list = hf.load_pickle(infile)
 
-    vector_dict = generate_empty_dict(len(chromophoreList))
+    vector_dict = generate_empty_dict(len(chromophore_list))
     #Set up the periodic simulation box into a single variable.
-    box = np.array([[AAMorphologyDict['lx'], AAMorphologyDict['ly'], AAMorphologyDict['lz']]])
+    box = np.array([[AA_morphology_dict['lx'], AA_morphology_dict['ly'], AA_morphology_dict['lz']]])
 
-    vector_dict = fill_dict(vector_dict, chromophoreList, AAMorphologyDict, box, database)
+    vector_dict = fill_dict(vector_dict, chromophore_list, AA_morphology_dict, box, database)
 
-    data = []#List for storing the calculated data
+    data = []  # List for storing the calculated data
 
     #Because DBP has fullerenes, iterate only up to
     #where the system is DBP
     if database == 'DBP.db':
         Nchrom = 500
     else:
-        Nchrom = len(chromophoreList)
+        Nchrom = len(chromophore_list)
 
     #Iterate through all the chromophores.
-    for i, chromophore in enumerate(chromophoreList[:Nchrom]):
+    for i, chromophore in enumerate(chromophore_list[:Nchrom]):
         #Iterate through the neighbors of each chromophore.
-        for neighbor in zip(chromophore.neighbours, chromophore.neighboursDeltaE, chromophore.neighboursTI):
+        for neighbor in zip(chromophore.neighbours, chromophore.neighbours_delta_E, chromophore.neighbours_TI):
             species1 = i
-            species2 = neighbor[0][0]#Gets the neighbor's index
-            dE = neighbor[1]#Get the difference in energy
-            TI = neighbor[2]#Get the transfer integral
-            if TI > 0:#Consider only pairs that will have hops.
+            species2 = neighbor[0][0]  # Gets the neighbor's index
+            dE = neighbor[1]  # Get the difference in energy
+            TI = neighbor[2]  # Get the transfer integral
+            if TI > 0:  # Consider only pairs that will have hops.
 
                 #Get the location of the other chromophore and make sure they're in the
                 #same periodic image.
-                species2_loc = check_vector(chromophoreList[species2].posn, chromophore.posn, box)
+                species2_loc = check_vector(chromophore_list[species2].posn, chromophore.posn, box)
                 #Calculate the distance (normally this is in Angstroms)
                 centers_vec = chromophore.posn - species2_loc
                 distance = np.linalg.norm(centers_vec)
@@ -360,19 +360,19 @@ def manual_load(table, infile, C1_index, C2_index):
         C1_index - integer for chromophore 1
         C2_index - integer for chromophore 2
     """
-    AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = hf.loadPickle(infile)
-    box = np.array([[AAMorphologyDict['lx'], AAMorphologyDict['ly'], AAMorphologyDict['lz']]])
-    write_positions_to_xyz(C1_index, C2_index, chromophoreList, AAMorphologyDict, box)
+    AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter_dict, chromophore_list = hf.load_pickle(infile)
+    box = np.array([[AA_morphology_dict['lx'], AA_morphology_dict['ly'], AA_morphology_dict['lz']]])
+    write_positions_to_xyz(C1_index, C2_index, chromophore_list, AA_morphology_dict, box)
 
-def write_positions_to_xyz(C1_index, C2_index, chromophoreList, AAMorphologyDict, box):
+def write_positions_to_xyz(C1_index, C2_index, chromophore_list, AA_morphology_dict, box):
     """
     Write the atom positions in two chromophores
     to an xyz file so it can be viewed
     Requires:
         C1_index - integer for chromophore 1
         C2_index - integer for chromophore 2
-        chromophoreList - list of all chromophore data
-        AAMorphologyDict - Dictionary of morphology data
+        chromophore_list - list of all chromophore data
+        AA_morphology_dict - Dictionary of morphology data
         box - array for the simulation box
     """
 
@@ -380,14 +380,14 @@ def write_positions_to_xyz(C1_index, C2_index, chromophoreList, AAMorphologyDict
     filename = "{}-{}.xyz".format(C1_index, C2_index)
 
     #Get the first's positions and types
-    chromophoreA = chromophoreList[C1_index]
-    chromophoreA_positions = [AAMorphologyDict['position'][i] for i in chromophoreA.AAIDs]
-    chromophoreA_types = [AAMorphologyDict['type'][i] for i in chromophoreA.AAIDs]
+    chromophoreA = chromophore_list[C1_index]
+    chromophoreA_positions = [AA_morphology_dict['position'][i] for i in chromophoreA.AAIDs]
+    chromophoreA_types = [AA_morphology_dict['type'][i] for i in chromophoreA.AAIDs]
 
     #Get the second's positions and types
-    chromophoreB = chromophoreList[C2_index]
-    chromophoreB_positions = [AAMorphologyDict['position'][i] for i in chromophoreB.AAIDs]
-    chromophoreB_types = [AAMorphologyDict['type'][i] for i in chromophoreB.AAIDs]
+    chromophoreB = chromophore_list[C2_index]
+    chromophoreB_positions = [AA_morphology_dict['position'][i] for i in chromophoreB.AAIDs]
+    chromophoreB_types = [AA_morphology_dict['type'][i] for i in chromophoreB.AAIDs]
 
     #Combine two chromophores into one list
     types = chromophoreA_types + chromophoreB_types
