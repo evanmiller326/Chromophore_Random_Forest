@@ -4,6 +4,7 @@ import sys
 import sqlite3
 import os
 import argparse
+from glob import glob
 
 def n_unwrapped(positions, box):
     """
@@ -243,7 +244,12 @@ def generate_empty_dict(N):
 
     return vector_dict
 
-def fill_dict(vector_dict, chromophore_list, AA_morphology_dict, box, species, three_atom_indices):
+def fill_dict(vector_dict, 
+        chromophore_list, 
+        AA_morphology_dict, 
+        box, 
+        species, 
+        three_atom_indices):
     """
     Iterate through the chromophore list and
     calculate the vectors describing the chromophore
@@ -262,7 +268,11 @@ def fill_dict(vector_dict, chromophore_list, AA_morphology_dict, box, species, t
     #Get the vectors for all the chromophores of the desired species:
     for i, chromophore in enumerate(chromophore_list):
         if chromophore.species == species:
-            v1, v2, v3 = generate_vectors(AA_morphology_dict['type'], chromophore.CGIDs, AA_morphology_dict['position'], box, three_atom_indices)
+            v1, v2, v3 = generate_vectors(AA_morphology_dict['type'], 
+                    chromophore.CGIDs, 
+                    AA_morphology_dict['position'], 
+                    box, 
+                    three_atom_indices)
             #Write the vectors to the dictionary.
             vector_dict[i]['vec1'] = v1
             vector_dict[i]['vec2'] = v2
@@ -290,7 +300,12 @@ def run_system(table, infile, molecule_dict, species):
     #Set up the periodic simulation box into a single variable.
     box = np.array([[AA_morphology_dict['lx'], AA_morphology_dict['ly'], AA_morphology_dict['lz']]])
 
-    vector_dict = fill_dict(vector_dict, chromophore_list, AA_morphology_dict, box, species, molecule_dict['atom_indices'])
+    vector_dict = fill_dict(vector_dict, 
+            chromophore_list, 
+            AA_morphology_dict, 
+            box, 
+            species, 
+            molecule_dict['atom_indices'])
 
     data = []  # List for storing the calculated data
 
@@ -427,7 +442,6 @@ def create_systems():
     Returns:
         systems - dictionary
     """
-    from glob import glob
     systems = {}
 
     #Get all the pickle files
@@ -446,6 +460,16 @@ def create_systems():
     return systems
 
 def get_molecule_dictionary(mol):
+    """
+    Function contains the dictionary
+    of molecule dictionaries.
+    This should centralize the hard-coding
+    for future molecules.
+    Requires:
+        mol - string, molecule name
+    Returns:
+        molecule dictionary - dict
+    """
     molecules = {'p3ht':{'database':'p3ht.db',
         'subdir':'training_data/P3HT/*.pickle',
         'atom_indices':[0, 1, 3]},
@@ -454,13 +478,31 @@ def get_molecule_dictionary(mol):
                 'atom_indices':[0, 20, 38]}}
     return molecules[mol]
 
+def rename_DBP_systems_to_sql_friendly():
+    """
+    Helper function to rename the DBP
+    pickle files to be an sql friendly naming
+    scheme so that the sql tables can use the
+    file names.
+    """
+    directory = "training_data/DBP"
+    pickle_files = glob(directory+'/*.pickle')
+
+    for pickle in pickle_files:
+        name = pickle.split('/')[-1]
+        name = name.split("-")
+        mol = name[1]
+        temps = name[-1].split(".")
+        name = "{}_{}_{}.pickle".format(mol, temps[0], temps[1])
+        print(pickle, os.path.join(directory, name))
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-s", "--species", required=False,
             help="""Pass this flag so that only pairs
             of the specified species (donor or acceptor)
             are added into the database.
-            If flag is not passed, it defaults to 'donor'.
+            If flag is not passed, defaults to 'donor'.
             """)
     args, input_list = parser.parse_known_args()
 
@@ -482,4 +524,5 @@ def main():
     #manual_load('crystalline', systems['crystalline'], 0, 1)
 
 if __name__ == "__main__":
-    main()
+    rename_DBP_systems_to_sql_friendly()
+    #main()
