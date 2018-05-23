@@ -3,6 +3,7 @@ from morphct.code import helper_functions as hf
 import sys
 import sqlite3
 import os
+import argparse
 
 def n_unwrapped(positions, box):
     """
@@ -200,7 +201,7 @@ def vector_normal(a, b, c, box):
 
     return cross
 
-def generate_vectors(types, indices, positions, box):
+def generate_vectors(types, indices, positions, box, three_atom_indices):
     """
     Wrapper function in getting the three vectors.
     Requires:
@@ -208,18 +209,17 @@ def generate_vectors(types, indices, positions, box):
         indices - list of the atom indices in the chromophore
         positions - array of atom positions
         box - array for the simulation box
+        three_atom_indices - list, the indices of the desired
+            atoms within the indices describing the chromophore
     Returns:
         v1, v2, v3 - arrays describing the 
             orientation of the chromophore
     """
-    #Get rid of the side chains in p3ht, probably not needed since
-    #we give it the indices anyway.
-    purged_list = [i for i in indices if types[i] not in ['H1', 'CT']]
-    #purged_list works for DBP as long as we only iterate through DBP chromophores, not fullerenes.
-    #Otherwise, we would need it to be ['CA', 'CT', 'O', 'H1'] since DBP carbons are type 'C'.
+    #Get the indices of the atoms within the molecule.
+    i, j, k = three_atom_indices
 
     #Get positions for the three atoms.
-    a, b, c = positions[purged_list[0]], positions[purged_list[1]], positions[purged_list[3]]
+    a, b, c = positions[indices[i]], positions[indices[j]], positions[indices[k]]
 
     #Get the three vectors
     v1 = vector_along_mol(a, b, c, box)
@@ -243,7 +243,7 @@ def generate_empty_dict(N):
 
     return vector_dict
 
-def fill_dict(vector_dict, chromophore_list, AA_morphology_dict, box, database):
+def fill_dict(vector_dict, chromophore_list, AA_morphology_dict, box, species, three_atom_indices):
     """
     Iterate through the chromophore list and
     calculate the vectors describing the chromophore
@@ -253,30 +253,23 @@ def fill_dict(vector_dict, chromophore_list, AA_morphology_dict, box, database):
         chromophore_list - list of all chromophore data
         AA_morphology_dict - Dictionary of morphology data
         box - array for the simulation box
-        database - string for the database
     Returns:
         vector_dict - filled dictionary where
             each key is a chromophore the pair
             is another dictionary for each
             vector.
     """
-    #Because DBP has fullerenes, iterate only up to
-    #where the system is DBP
-    if database == 'DBP.db':
-        Nchrom = 500
-    else:
-        Nchrom = len(chromophore_list)
-
-    #Get the vectors for all the chromophores:
-    for i, chromophore in enumerate(chromophore_list[:Nchrom]):
-        v1, v2, v3 = generate_vectors(AA_morphology_dict['type'], chromophore.CGIDs, AA_morphology_dict['position'], box)
-        #Write the vectors to the dictionary.
-        vector_dict[i]['vec1'] = v1
-        vector_dict[i]['vec2'] = v2
-        vector_dict[i]['vec3'] = v3
+    #Get the vectors for all the chromophores of the desired species:
+    for i, chromophore in enumerate(chromophore_list):
+        if chromophore.species == species:
+            v1, v2, v3 = generate_vectors(AA_morphology_dict['type'], chromophore.CGIDs, AA_morphology_dict['position'], box, three_atom_indices)
+            #Write the vectors to the dictionary.
+            vector_dict[i]['vec1'] = v1
+            vector_dict[i]['vec2'] = v2
+            vector_dict[i]['vec3'] = v3
     return vector_dict
 
-def run_system(table, infile, database):
+def run_system(table, infile, molecule_dict, species):
     """
     Calculate the relative orientational
     data for pairs of chromophores.
@@ -284,73 +277,78 @@ def run_system(table, infile, database):
         table - string, the name of the table in the database
         infile - string, the name of the pickle file
         database - string, the nameof the database file
+        species - string, 'donor' or 'acceptor'
     """
+    #Load in the data
     AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter_dict, chromophore_list = hf.load_pickle(infile)
-    vector_dict = generate_empty_dict(len(chromophore_list))
+
+    #Get the number of the desired species for creating the dictionary
+    species_list = [chromophore.species for chromophore in chromophore_list]
+    n_species = species_list.count(species)
+
+    vector_dict = generate_empty_dict(n_species)
     #Set up the periodic simulation box into a single variable.
     box = np.array([[AA_morphology_dict['lx'], AA_morphology_dict['ly'], AA_morphology_dict['lz']]])
 
-    vector_dict = fill_dict(vector_dict, chromophore_list, AA_morphology_dict, box, database)
+    vector_dict = fill_dict(vector_dict, chromophore_list, AA_morphology_dict, box, species, molecule_dict['atom_indices'])
 
     data = []  # List for storing the calculated data
 
     #Because DBP has fullerenes, iterate only up to
     #where the system is DBP
-    if database == 'DBP.db':
-        Nchrom = 500
-    else:
-        Nchrom = len(chromophore_list)
 
     #Iterate through all the chromophores.
-    for i, chromophore in enumerate(chromophore_list[:Nchrom]):
-        #Iterate through the neighbors of each chromophore.
-        for neighbor in zip(chromophore.neighbours, chromophore.neighbours_delta_E, chromophore.neighbours_TI):
-            species1 = i
-            species2 = neighbor[0][0]  # Gets the neighbor's index
-            dE = neighbor[1]  # Get the difference in energy
-            TI = neighbor[2]  # Get the transfer integral
-            if TI > 0:  # Consider only pairs that will have hops.
+    for i, chromophore in enumerate(chromophore_list):
+        #Only get the desired acceptor or donor species, needed for blends.
+        if chromophore.species == species:
+            #Iterate through the neighbors of each chromophore.
+            for neighbor in zip(chromophore.neighbours, chromophore.neighbours_delta_E, chromophore.neighbours_TI):
+                species1 = i
+                species2 = neighbor[0][0]  # Gets the neighbor's index
+                dE = neighbor[1]  # Get the difference in energy
+                TI = neighbor[2]  # Get the transfer integral
+                if TI > 0:  # Consider only pairs that will have hops.
 
-                #Get the location of the other chromophore and make sure they're in the
-                #same periodic image.
-                species2_loc = check_vector(chromophore_list[species2].posn, chromophore.posn, box)
-                #Calculate the distance (normally this is in Angstroms)
-                centers_vec = chromophore.posn - species2_loc
-                distance = np.linalg.norm(centers_vec)
+                    #Get the location of the other chromophore and make sure they're in the
+                    #same periodic image.
+                    species2_loc = check_vector(chromophore_list[species2].posn, chromophore.posn, box)
+                    #Calculate the distance (normally this is in Angstroms)
+                    centers_vec = chromophore.posn - species2_loc
+                    distance = np.linalg.norm(centers_vec)
 
-                #Get the direction from one chromophore center to the other
-                direction_vec = centers_vec/distance
+                    #Get the direction from one chromophore center to the other
+                    direction_vec = centers_vec/distance
 
-                #Get the vectors describing the two chromophores
-                vdict1 = vector_dict[species1]
-                vdict2 = vector_dict[species2]
+                    #Get the vectors describing the two chromophores
+                    vdict1 = vector_dict[species1]
+                    vdict2 = vector_dict[species2]
 
-                #Calculate the differences in alignment between the chromophores
-                dotA = np.dot(vdict1['vec1'], vdict2['vec1'])
-                dotB = np.dot(vdict1['vec2'], vdict2['vec2'])
-                dotC = np.dot(vdict1['vec3'], vdict2['vec3'])
-                dotD = np.dot(direction_vec, vdict1['vec1'])
-                dotE = np.dot(direction_vec, vdict1['vec2'])
-                dotF = np.dot(direction_vec, vdict1['vec3'])
+                    #Calculate the differences in alignment between the chromophores
+                    dotA = np.dot(vdict1['vec1'], vdict2['vec1'])
+                    dotB = np.dot(vdict1['vec2'], vdict2['vec2'])
+                    dotC = np.dot(vdict1['vec3'], vdict2['vec3'])
+                    dotD = np.dot(direction_vec, vdict1['vec1'])
+                    dotE = np.dot(direction_vec, vdict1['vec2'])
+                    dotF = np.dot(direction_vec, vdict1['vec3'])
 
-                #Combine the data into an array
-                datum = np.array([species1,
-                    species2,
-                    distance,
-                    dE,
-                    dotA,
-                    dotB,
-                    dotC,
-                    dotD,
-                    dotE,
-                    dotF,
-                    TI])
+                    #Combine the data into an array
+                    datum = np.array([species1,
+                        species2,
+                        distance,
+                        dE,
+                        dotA,
+                        dotB,
+                        dotC,
+                        dotD,
+                        dotE,
+                        dotF,
+                        TI])
 
-                data.append(datum) #Write the data to the list
+                    data.append(datum) #Write the data to the list
 
     data = np.array(data) #Turn the list into an array, may be unnecessary
 
-    add_to_database(table, data, database) #Write the data to the database
+    add_to_database(table, data, molecule_dict['database']) #Write the data to the database
 
 def manual_load(table, infile, C1_index, C2_index):
     """
@@ -447,17 +445,41 @@ def create_systems():
         systems[name] = directory
     return systems
 
-if __name__ == "__main__":
+def get_molecule_dictionary(mol):
+    molecules = {'p3ht':{'database':'p3ht.db',
+        'subdir':'training_data/P3HT/*.pickle',
+        'atom_indices':[0, 1, 3]},
+            'dbp':{'database':'dbp.db',
+                'subdir':'training_data/DBP/*.pickle',
+                'atom_indices':[0, 20, 38]}}
+    return molecules[mol]
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-s", "--species", required=False,
+            help="""Pass this flag so that only pairs
+            of the specified species (donor or acceptor)
+            are added into the database.
+            If flag is not passed, it defaults to 'donor'.
+            """)
+    args, input_list = parser.parse_known_args()
+
+    species = 'donor'
+    if args.species:
+        species = args.species
+
     molecule = sys.argv[1]
-    if molecule == 'p3ht':
-        database = 'p3ht.db'
-        systems = {'crystalline':'training_data/P3HT/large_p3ht_ordered.pickle', 
-                'semicrystalline':'training_data/P3HT/large_p3ht_semicrystalline.pickle', 
-                'disordered':'training_data/P3HT/large_p3ht_disordered.pickle'}
-    if molecule == 'dbp':
-        systems = create_systems()
-        database = 'dbp.db'
-    create_data_base(database, systems)
+
+    molecule_dict = get_molecule_dictionary(molecule)
+
+    systems = create_systems()
+    #systems = create_systems(molecule_dict['subdir'])
+
+    create_data_base(molecule_dict['database'], systems)
+
     for key, pair in systems.items():
-        run_system(key, pair, database)
+        run_system(key, pair, molecule_dict, species)
     #manual_load('crystalline', systems['crystalline'], 0, 1)
+
+if __name__ == "__main__":
+    main()
