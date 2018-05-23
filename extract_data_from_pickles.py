@@ -57,7 +57,6 @@ def create_data_base(database, systems):
         pass
 
     tables = [key for key, pair in systems.items()]
-    print(tables)
     connection = sqlite3.connect(database)
     cursor = connection.cursor()
     for table in tables:
@@ -202,11 +201,10 @@ def vector_normal(a, b, c, box):
 
     return cross
 
-def generate_vectors(types, indices, positions, box, three_atom_indices):
+def generate_vectors(indices, positions, box, three_atom_indices):
     """
     Wrapper function in getting the three vectors.
     Requires:
-        types - list of atom types
         indices - list of the atom indices in the chromophore
         positions - array of atom positions
         box - array for the simulation box
@@ -268,8 +266,7 @@ def fill_dict(vector_dict,
     #Get the vectors for all the chromophores of the desired species:
     for i, chromophore in enumerate(chromophore_list):
         if chromophore.species == species:
-            v1, v2, v3 = generate_vectors(AA_morphology_dict['type'], 
-                    chromophore.CGIDs, 
+            v1, v2, v3 = generate_vectors(chromophore.CGIDs, 
                     AA_morphology_dict['position'], 
                     box, 
                     three_atom_indices)
@@ -286,7 +283,7 @@ def run_system(table, infile, molecule_dict, species):
     Requires:
         table - string, the name of the table in the database
         infile - string, the name of the pickle file
-        database - string, the nameof the database file
+        molecule_dict - dictionary containing molecule information
         species - string, 'donor' or 'acceptor'
     """
     #Load in the data
@@ -432,30 +429,31 @@ def write_positions_to_xyz(C1_index, C2_index, chromophore_list, AA_morphology_d
     with open(filename, 'w') as f:
         f.write(to_write)
         
-def create_systems():
+def create_systems(subdir):
     """
-    Helper function to generate the dictionary
-    for the DBP system from the filenames
-    within the DBP directory.
+    Creates a dictionary with table:
+    pickle file pairs. 
+    The name before the .pickle is used
+    as the table name.
+    The name of the pickle file must be
+    sql friendly.
     Requires:
-        None
+        subdir - string for the directory
+            of pickle files
     Returns:
         systems - dictionary
     """
     systems = {}
 
     #Get all the pickle files
-    directory_list = glob("training_data/DBP/*.pickle")
+    directory_list = glob(subdir)
 
     #From the pickle file names, convert them
     #into an sql friendly format and write
     #them to the dictionary.
     for directory in directory_list:
         name = directory.split('/')[-1]
-        name = name.split("-")
-        mol = name[1]
-        temps = name[-1].split(".")
-        name = "{}_{}_{}".format(mol, temps[0], temps[1])
+        name = name.split(".")[0]
         systems[name] = directory
     return systems
 
@@ -465,6 +463,7 @@ def get_molecule_dictionary(mol):
     of molecule dictionaries.
     This should centralize the hard-coding
     for future molecules.
+    Currently supported molecules are p3ht and dbp.
     Requires:
         mol - string, molecule name
     Returns:
@@ -484,17 +483,23 @@ def rename_DBP_systems_to_sql_friendly():
     pickle files to be an sql friendly naming
     scheme so that the sql tables can use the
     file names.
+    Requires:
+        None
+    Returns:
+        None
     """
     directory = "training_data/DBP"
     pickle_files = glob(directory+'/*.pickle')
 
     for pickle in pickle_files:
         name = pickle.split('/')[-1]
+        assert len(name.split('.')) > 2 
+        #Only allow the rename if there are too many periods.
         name = name.split("-")
         mol = name[1]
         temps = name[-1].split(".")
-        name = "{}_{}_{}.pickle".format(mol, temps[0], temps[1])
-        print(pickle, os.path.join(directory, name))
+        name = "DBP_{}_{}_{}.pickle".format(mol, temps[0], temps[1])
+        os.rename(pickle, os.path.join(directory, name))
 
 def main():
     parser = argparse.ArgumentParser()
@@ -514,15 +519,13 @@ def main():
 
     molecule_dict = get_molecule_dictionary(molecule)
 
-    systems = create_systems()
-    #systems = create_systems(molecule_dict['subdir'])
+    systems = create_systems(molecule_dict['subdir'])
 
     create_data_base(molecule_dict['database'], systems)
 
     for key, pair in systems.items():
         run_system(key, pair, molecule_dict, species)
-    #manual_load('crystalline', systems['crystalline'], 0, 1)
 
 if __name__ == "__main__":
-    rename_DBP_systems_to_sql_friendly()
-    #main()
+    main()
+    #manual_load('crystalline', systems['crystalline'], 0, 1)
