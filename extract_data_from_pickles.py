@@ -332,12 +332,28 @@ def run_system(table, infile, molecule_dict, species):
                     # Vec1 for DBP is (midpoint(1, 2) -> 3) (along Y axis)
                     # Vec2 for DBP is (1 -> 2) (along X axis)
                     # Vec3 for DBP is Normal to both (along Z axis)
+                    # MJ note: FOR DBP ONLY if we assume the chromophore is identical above
+                    # and below the plane of the molecule, then because
+                    # dot(a, b) == - dot(a, -b), we can reduce the dimensionality
+                    # of our data further by just taking the absolute value of the
+                    # dot product.
                     rotY = np.dot(vdict1['vec1'], vdict2['vec1'])
                     rotX = np.dot(vdict1['vec2'], vdict2['vec2'])
                     rotZ = np.dot(vdict1['vec3'], vdict2['vec3'])
-                    posX = np.abs(centers_vec[0])
-                    posY = np.abs(centers_vec[1])
-                    posZ = np.abs(centers_vec[2])
+
+                    # We need to calculate a rotation matrix that can map the normal vector
+                    # describing the plane of the first chromophore to the z-axis.
+                    # We can define this rotation matrix as the required transformation to
+                    # map the normal of chromophore 1 (a) to the unit z axis (b).
+                    rotation_matrix = calculate_rotation_matrix(vdict1['vec3'], vdict1['vec2'])
+                    old_length = np.linalg.norm(centers_vec)
+                    transformed_separation_vec = np.matmul(rotation_matrix, centers_vec)
+                    new_length = np.linalg.norm(transformed_separation_vec)
+                    assert np.isclose(old_length, new_length)
+
+                    posX = centers_vec[0]
+                    posY = centers_vec[1]
+                    posZ = centers_vec[2]
                     #Combine the data into an array
                     datum = np.array([index1,
                         index2,
@@ -487,13 +503,70 @@ def rename_DBP_systems_to_sql_friendly():
 
     for pickle in pickle_files:
         name = pickle.split('/')[-1]
-        assert len(name.split('.')) > 2 
+        assert len(name.split('.')) > 2
         #Only allow the rename if there are too many periods.
         name = name.split("-")
         mol = name[1]
         temps = name[-1].split(".")
         name = "DBP_{}_{}_{}.pickle".format(mol, temps[0], temps[1])
         os.rename(pickle, os.path.join(directory, name))
+
+def rename_input_pickles(directory):
+    pickle_files = glob(os.path.join(directory, "*.pickle"))
+    for input_file in pickle_files:
+        (path, file_name) = os.path.split(input_file)
+        (simulation, extension) = os.path.splitext(file_name)
+        new_simulation = simulation.replace("-", "_").replace(".", "_")
+        new_name = os.path.join(path, "".join([new_simulation, extension]))
+        os.rename(os.path.abspath(input_file), os.path.abspath(new_name))
+
+
+def calculate_rotation_matrix(vec3, vec2):
+    normal_vector = vec3 / np.linalg.norm(vec3)
+    in_plane_vector = vec2 / np.linalg.norm(vec2)
+    # Firstly rotating normal_vector onto [0, 0, 1]
+    z_axis = np.array([0, 0, 1])
+    v_x = calculate_skew_symm_matrix(normal_vector, z_axis)
+    R1 = map_a_onto_b(normal_vector, z_axis, v_x)
+    # Now need the rotation around Z that maps in_plane_vector
+    # to x_axis (might not be necessary)
+    theta = np.arccos(np.dot(in_plane_vector[:2], np.array([1, 0])))
+    R2 = calculate_z_rotation_matrix(theta)
+    return np.matmul(R2, R1)
+
+
+def calculate_z_rotation_matrix(theta):
+    matrix = np.array(
+            [
+                [np.cos(theta), -np.sin(theta), 0],
+                [np.sin(theta), np.cos(theta), 0],
+                [0, 0, 1]
+                ]
+            )
+    return matrix
+
+
+def calculate_skew_symm_matrix(vec_a, vec_b):
+    cross_product = np.cross(vec_a, vec_b)
+    matrix = np.array(
+            [
+                [0, -cross_product[2], cross_product[1]],
+                [cross_product[2], 0, -cross_product[0]],
+                [-cross_product[1], cross_product[0], 0]
+                ]
+            )
+    return matrix
+
+
+def map_a_onto_b(vec_a, vec_b, v_x):
+    component1 = np.identity(3)
+    component2 = v_x
+    component3a = np.matmul(v_x, v_x)
+    component3b = (1 - np.dot(vec_a, vec_b)) / (np.linalg.norm(np.cross(vec_a, vec_b))**2)
+    #print(component1.shape, component2.shape, component3a.shape)
+    R = component1 + component2 + (component3b * component3a)
+    return R
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -508,6 +581,11 @@ def main():
             molecule directory to look in for the
             training data.
             """)
+    parser.add_argument("-p", "--pickle", required=False,
+            default=None,
+            help="""Pass this flag to specify a
+            single pickle from which to make the SQL database.
+            """)
     args, input_list = parser.parse_known_args()
 
     species = 'donor'
@@ -516,9 +594,14 @@ def main():
 
     molecule = args.molecule.lower()
 
+    rename_input_pickles(os.path.join('training_data', args.molecule))
     molecule_dict = get_molecule_dictionary(molecule)
 
-    systems = create_systems(molecule_dict['subdir'])
+    if args.pickle is None:
+        look_in = molecule_dict['subdir']
+    else:
+        look_in = os.path.relpath(args.pickle)
+    systems = create_systems(look_in)
 
     create_data_base(molecule_dict['database'], systems)
 
