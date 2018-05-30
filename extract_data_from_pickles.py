@@ -63,14 +63,13 @@ def create_data_base(database, systems):
         to_execute = "CREATE TABLE {}( ".format(table)
         to_execute += "chromophoreA INT, "
         to_execute += "chromophoreB INT, "
-        to_execute += "distance REAL, "
+        to_execute += "posX REAL, "
+        to_execute += "posY REAL, "
+        to_execute += "posZ REAL, "
+        to_execute += "rotX REAL, "
+        to_execute += "rotY REAL, "
+        to_execute += "rotZ REAL, "
         to_execute += "deltaE REAL, "
-        to_execute += "alignX REAL, "
-        to_execute += "alignY REAL, "
-        to_execute += "alignZ REAL, "
-        to_execute += "registerA REAL, "
-        to_execute += "registerB REAL, "
-        to_execute += "registerC REAL, "
         to_execute += "TI REAL"
         to_execute += ");"
         cursor.execute(to_execute)
@@ -104,9 +103,9 @@ def add_to_database(table, data, database):
     cursor = connection.cursor()
     div_data = chunks(data)
     for chunk in div_data:
-        for chromophoreA, chromophoreB, distace, deltaE, alignX, alignY, alignZ, registerA, registerB, registerC, TI in chunk:
-            query = "INSERT INTO {} VALUES( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);".format(table)
-            cursor.execute(query, (chromophoreA, chromophoreB, distace, deltaE, alignX, alignY, alignZ, registerA, registerB, registerC, TI))
+        for chromophoreA, chromophoreB, posX, posY, posZ, rotX, rotY, rotZ, deltaE, TI in chunk:
+            query = "INSERT INTO {} VALUES( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);".format(table)
+            cursor.execute(query, (chromophoreA, chromophoreB, posX, posY, posZ, rotX, rotY, rotZ, deltaE, TI))
     connection.commit()
     cursor.close()
     connection.close()
@@ -310,49 +309,45 @@ def run_system(table, infile, molecule_dict, species):
 
     #Iterate through all the chromophores.
     for i, chromophore in enumerate(chromophore_list):
-        #Only get the desired acceptor or donor species, needed for blends.
+        #Only get the desired acceptor or donor index, needed for blends.
         if chromophore.species == species:
             #Iterate through the neighbors of each chromophore.
             for neighbor in zip(chromophore.neighbours, chromophore.neighbours_delta_E, chromophore.neighbours_TI):
-                species1 = i
-                species2 = neighbor[0][0]  # Gets the neighbor's index
+                index1 = i
+                index2 = neighbor[0][0]  # Gets the neighbor's index
                 dE = neighbor[1]  # Get the difference in energy
                 TI = neighbor[2]  # Get the transfer integral
                 if TI > 0:  # Consider only pairs that will have hops.
 
                     #Get the location of the other chromophore and make sure they're in the
                     #same periodic image.
-                    species2_loc = check_vector(chromophore_list[species2].posn, chromophore.posn, box)
+                    index2_loc = check_vector(chromophore_list[index2].posn, chromophore.posn, box)
                     #Calculate the distance (normally this is in Angstroms)
-                    centers_vec = chromophore.posn - species2_loc
-                    distance = np.linalg.norm(centers_vec)
-
-                    #Get the direction from one chromophore center to the other
-                    direction_vec = centers_vec/distance
+                    centers_vec = chromophore.posn - index2_loc
 
                     #Get the vectors describing the two chromophores
-                    vdict1 = vector_dict[species1]
-                    vdict2 = vector_dict[species2]
-
+                    vdict1 = vector_dict[index1]
+                    vdict2 = vector_dict[index2]
                     #Calculate the differences in alignment between the chromophores
-                    dotA = np.dot(vdict1['vec1'], vdict2['vec1'])
-                    dotB = np.dot(vdict1['vec2'], vdict2['vec2'])
-                    dotC = np.dot(vdict1['vec3'], vdict2['vec3'])
-                    dotD = np.dot(direction_vec, vdict1['vec1'])
-                    dotE = np.dot(direction_vec, vdict1['vec2'])
-                    dotF = np.dot(direction_vec, vdict1['vec3'])
-
+                    # Vec1 for DBP is (midpoint(1, 2) -> 3) (along Y axis)
+                    # Vec2 for DBP is (1 -> 2) (along X axis)
+                    # Vec3 for DBP is Normal to both (along Z axis)
+                    rotY = np.dot(vdict1['vec1'], vdict2['vec1'])
+                    rotX = np.dot(vdict1['vec2'], vdict2['vec2'])
+                    rotZ = np.dot(vdict1['vec3'], vdict2['vec3'])
+                    posX = np.abs(centers_vec[0])
+                    posY = np.abs(centers_vec[1])
+                    posZ = np.abs(centers_vec[2])
                     #Combine the data into an array
-                    datum = np.array([species1,
-                        species2,
-                        distance,
+                    datum = np.array([index1,
+                        index2,
+                        posX,
+                        posY,
+                        posZ,
+                        rotX,
+                        rotY,
+                        rotZ,
                         dE,
-                        dotA,
-                        dotB,
-                        dotC,
-                        dotD,
-                        dotE,
-                        dotF,
                         TI])
 
                     data.append(datum) #Write the data to the list
@@ -412,7 +407,7 @@ def write_positions_to_xyz(C1_index, C2_index, chromophore_list, AA_morphology_d
     #Move the atoms to the same reference position
     for i, pos in enumerate(positions):
         saved = np.copy(pos)
-        positions[i] = check_vector(pos, reference, box) 
+        positions[i] = check_vector(pos, reference, box)
 
     #Center the chromophores around the geometric average
     positions -= np.mean(positions, axis = 0)
@@ -427,7 +422,7 @@ def write_positions_to_xyz(C1_index, C2_index, chromophore_list, AA_morphology_d
         to_write += "{} {} {} {}\n".format(atom_type, atom[0], atom[1], atom[2])
     with open(filename, 'w') as f:
         f.write(to_write)
-        
+
 def create_systems(subdir):
     """
     Creates a dictionary with table:
@@ -508,13 +503,18 @@ def main():
             are added into the database.
             If flag is not passed, defaults to 'donor'.
             """)
+    parser.add_argument("-m", "--molecule", required=True,
+            help="""Pass this flag to specify the
+            molecule directory to look in for the
+            training data.
+            """)
     args, input_list = parser.parse_known_args()
 
     species = 'donor'
     if args.species:
         species = args.species
 
-    molecule = sys.argv[1]
+    molecule = args.molecule.lower()
 
     molecule_dict = get_molecule_dictionary(molecule)
 
