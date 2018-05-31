@@ -276,8 +276,58 @@ def fill_dict(vector_dict,
             vector_dict[i]['vec3'] = v3
     return vector_dict
 
-def identify_chains(N, mers):
-    return [np.arange(j*mers, (j+1)*mers) for j in range(N)]
+def identify_chains(input_dictionary, chromophore_list):
+    print("Identifying chain numbers...")
+    # Create a lookup table `neighbour list' for all connected atoms called {bondedAtoms}
+    bonded_atoms = hf.obtain_bonded_list(input_dictionary['bond'])
+    molecule_list = [i for i in range(len(input_dictionary['type']))]
+    # Recursively add all atoms in the neighbour list to this molecule
+    for mol_ID in range(len(molecule_list)):
+        molecule_list = update_molecule(mol_ID, molecule_list, bonded_atoms)
+    # Create a dictionary of the molecule data
+    molecule_data = {}
+    for atom_ID in range(len(input_dictionary['type'])):
+        if molecule_list[atom_ID] not in molecule_data:
+            molecule_data[molecule_list[atom_ID]] = [atom_ID]
+        else:
+            molecule_data[molecule_list[atom_ID]].append(atom_ID)
+    # Now map the AAID data back to the chromophores
+    # Reverse the molecule_data dictionary
+    reverse_lookup_dict = {value: key for key, val in molecule_data.items() for value in val}
+    chromos_in_mol = {}
+    for chromophore in chromophore_list:
+        mol_no = reverse_lookup_dict[chromophore.AAIDs[0]]
+        if mol_no not in chromos_in_mol.keys():
+            chromos_in_mol[mol_no] = [chromophore.ID]
+        else:
+            chromos_in_mol[mol_no] += [chromophore.ID]
+    chromos_by_mol_list = [np.array(chromos_in_mol[index]) for index in sorted(chromos_in_mol.keys())]
+    return chromos_by_mol_list
+
+
+def update_molecule(atom_ID, molecule_list, bonded_atoms):
+    # Recursively add all neighbours of atom number atomID to this molecule
+    try:
+        for bonded_atom in bonded_atoms[atom_ID]:
+            # If the moleculeID of the bonded atom is larger than that of the current one,
+            # update the bonded atom's ID to the current one's to put it in this molecule,
+            # then iterate through all of the bonded atom's neighbours
+            if molecule_list[bonded_atom] > molecule_list[atom_ID]:
+                molecule_list[bonded_atom] = molecule_list[atom_ID]
+                molecule_list = update_molecule(bonded_atom, molecule_list, bonded_atoms)
+            # If the moleculeID of the current atom is larger than that of the bonded one,
+            # update the current atom's ID to the bonded one's to put it in this molecule,
+            # then iterate through all of the current atom's neighbours
+            elif molecule_list[bonded_atom] < molecule_list[atom_ID]:
+                molecule_list[atom_ID] = molecule_list[bonded_atom]
+                molecule_list = update_molecule(atom_ID, molecule_list, bonded_atoms)
+            # Else: both the current and the bonded atom are already known to be in this
+            # molecule, so we don't have to do anything else.
+    except KeyError:
+        # This means that there are no bonded CG sites (i.e. it's a single molecule)
+        pass
+    return molecule_list
+    
 
 def check_same_chain(molecule_list, index1, index2, mers):
     molA = molecule_list[index1//mers]
@@ -317,7 +367,7 @@ def run_system(table, infile, molecule_dict, species, mers=15):
 
     data = []  # List for storing the calculated data
 
-    molecule_list = identify_chains(n_species, mers)
+    molecule_list = identify_chains(AA_morphology_dict, chromophore_list)
 
     #Because DBP has fullerenes, iterate only up to
     #where the system is DBP
