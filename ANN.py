@@ -2,6 +2,11 @@ import tensorflow as tf
 import numpy as np
 import sqlite3
 
+import sklearn
+from sklearn.preprocessing import normalize
+from sklearn.preprocessing import normalize
+from sklearn import preprocessing 
+
 import matplotlib.pyplot as plt
 
 def load_database(database):
@@ -50,14 +55,24 @@ def get_data(database = 'p3ht.db', ratio = 0.95, forward_hops_only = False):
         chromo_IDs = np.array(chromo_IDs)
         data = np.array(data)
 
-    training = data[:int(len(data)*ratio),:]
-    validation = data[int(len(data)*(ratio)):,:]
+    #data = shuffle_data(data)
 
-    return training[:,:-1], np.array([training[:,-1]]).T, validation[:,:-1], np.array([validation[:,-1]]).T, chromo_IDs
+    features = data[:,:-1]
+    answers = np.array([data[:,-1]]).T
+
+    #scaler = preprocessing.StandardScaler().fit(features)
+    #features = scaler.transform(features)
+    features = normalize(features)
+
+    cut_off = int(len(data)*ratio)
+
+    return features[:cut_off,:], answers[:cut_off,:], features[cut_off:,:], answers[cut_off:,:], chromo_IDs
 
 def weights(input_vector, in_nodes, out_nodes):
-    W = tf.random_normal(shape=[in_nodes, out_nodes], stddev=0.3)
-    b = tf.random_normal(shape=[out_nodes], stddev = 0.3)
+    W = tf.random_normal(shape=[in_nodes, out_nodes], mean=0.2, stddev=0.2)
+    b = tf.random_normal(shape=[out_nodes], mean = 0.2, stddev = 0.2)
+    #W = tf.random_normal(shape=[in_nodes, out_nodes], stddev=0.1)
+    #b = tf.random_normal(shape=[out_nodes], stddev = 0.1)
     return build_layer(input_vector, tf.Variable(W), tf.Variable(b))
 
 def get_batch(vectors, labels):
@@ -69,9 +84,10 @@ def get_batch(vectors, labels):
 def build_layer(x, W, b):
     return tf.add(tf.matmul(x,W),b)
 
-def plot_comparison(actual, predicted):
+def plot_comparison(actual, predicted, rmse):
     plt.scatter(actual, predicted, zorder=0, alpha = 0.5, s=12)
     plt.plot(np.linspace(0, np.amax(actual), 10), np.linspace(0, np.amax(actual), 10), c='k', zorder = 10)
+    plt.title("ANN-RMSE-{:.5f}".format(rmse))
     plt.xlabel("Actual")
     plt.ylabel("Predicted")
     plt.savefig("Ann_comp.png")
@@ -96,9 +112,7 @@ def plot_error_hist(error_dictionary):
     plt.xlabel("Error")
     plt.ylabel("Frequency")
     plt.xlim([-0.5, 0.5])
-    plt.show()
     plt.savefig("./error_histogram_all.png")
-
 
 def ANN(Nlayers = 1, N_nodes= [1], training_iterations = 5e4, run_name = "", show_comparison = False, forward_hops_only = False):
 
@@ -126,7 +140,7 @@ def ANN(Nlayers = 1, N_nodes= [1], training_iterations = 5e4, run_name = "", sho
 
     #training_step = tf.train.GradientDescentOptimizer(0.1).minimize(cost)
 
-    optimizer = tf.train.AdamOptimizer(0.001)
+    optimizer = tf.train.AdamOptimizer(0.01)
     training_step = optimizer.minimize(cost)
 
     session = tf.Session()
@@ -147,14 +161,17 @@ def ANN(Nlayers = 1, N_nodes= [1], training_iterations = 5e4, run_name = "", sho
 
     pred_y = session.run(y_out, feed_dict={x: validation_vectors})
 
+    rmse = session.run(cost,feed_dict={x:validation_vectors,y_:validation_answers})
+
     error_dictionary = find_largest_deviations(chromo_IDs, pred_y, validation_answers)
-    plot_error_hist(error_dictionary)
-    plot_comparison(validation_answers, pred_y)
+
+    #plot_error_hist(error_dictionary)
+    plot_comparison(validation_answers, pred_y, rmse)
 
 
 if __name__ == "__main__":
-    Nlayers = 4
-    node_comb = [7, 20, 10, 1]
-    steps = 1e3
+    Nlayers = 2
+    node_comb = [9, 1]
+    steps = 2e4
     forward_hops_only = False
     ANN(Nlayers = Nlayers, N_nodes= node_comb, training_iterations = steps, forward_hops_only = forward_hops_only)
