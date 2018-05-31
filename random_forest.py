@@ -123,7 +123,7 @@ if __name__ == "__main__":
     df = df.drop(['Chromophore1', 'Chromophore2'], axis=1)
 
     print("Splitting inputs and outputs")
-    features = df[['distance', 'posX', 'posY', 'posZ', 'rotX', 'rotY', 'rotZ', 'DeltaE']]
+    features = df[['posX', 'posY', 'posZ', 'rotX', 'rotY', 'rotZ', 'DeltaE']]
     y = df[['TI']]
     print(features.shape, y.shape)
 
