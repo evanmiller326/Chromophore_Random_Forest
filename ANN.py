@@ -2,6 +2,11 @@ import tensorflow as tf
 import numpy as np
 import sqlite3
 
+import sklearn
+from sklearn.preprocessing import normalize
+from sklearn.preprocessing import normalize
+from sklearn import preprocessing 
+
 import matplotlib.pyplot as plt
 
 def load_database(database):
@@ -27,21 +32,29 @@ def shuffle_data(data):
     p = np.random.permutation(len(data))
     return data[p]
 
-def get_data(database = 'p3ht.db', ratio = 0.95):
+def get_data(database = 'p3ht.db', ratio = 0.90):
 
     data = load_database(database)
     data = data[:,2:]
 
-    data = shuffle_data(data)
+    #data = shuffle_data(data)
 
-    training = data[:int(len(data)*ratio),:]
-    validation = data[int(len(data)*(ratio)):,:]
+    features = data[:,:-1]
+    answers = np.array([data[:,-1]]).T
 
-    return training[:,:-1], np.array([training[:,-1]]).T, validation[:,:-1], np.array([validation[:,-1]]).T
+    scaler = preprocessing.StandardScaler().fit(features)
+    features = scaler.transform(features)
+    #features = normalize(features)
+
+    cut_off = int(len(data)*ratio)
+
+    return features[:cut_off,:], answers[:cut_off,:], features[cut_off:,:], answers[cut_off:,:]
 
 def weights(input_vector, in_nodes, out_nodes):
-    W = tf.random_normal(shape=[in_nodes, out_nodes], stddev=0.3)
-    b = tf.random_normal(shape=[out_nodes], stddev = 0.3)
+    W = tf.random_normal(shape=[in_nodes, out_nodes], mean=0.2, stddev=0.2)
+    b = tf.random_normal(shape=[out_nodes], mean = 0.2, stddev = 0.2)
+    #W = tf.random_normal(shape=[in_nodes, out_nodes], stddev=0.1)
+    #b = tf.random_normal(shape=[out_nodes], stddev = 0.1)
     return build_layer(input_vector, tf.Variable(W), tf.Variable(b))
 
 def get_batch(vectors, labels):
@@ -62,7 +75,7 @@ def plot_comparison(actual, predicted):
 
 def ANN(Nlayers = 1, N_nodes= [1], training_iterations = 5e4, run_name = "", show_comparison = False):
 
-    training_vectors, training_answers, validation_vectors, validation_answers = get_data(database = 'p3ht.db', ratio = 0.95)
+    training_vectors, training_answers, validation_vectors, validation_answers = get_data(database = 'p3ht.db', ratio = 0.90)
 
     assert Nlayers == len(N_nodes) 
 
@@ -85,7 +98,7 @@ def ANN(Nlayers = 1, N_nodes= [1], training_iterations = 5e4, run_name = "", sho
 
     #training_step = tf.train.GradientDescentOptimizer(0.1).minimize(cost)
 
-    optimizer = tf.train.AdamOptimizer(0.001)
+    optimizer = tf.train.AdamOptimizer(0.01)
     training_step = optimizer.minimize(cost)
 
     session = tf.Session()
@@ -109,7 +122,7 @@ def ANN(Nlayers = 1, N_nodes= [1], training_iterations = 5e4, run_name = "", sho
     plot_comparison(validation_answers, pred_y)
     
 if __name__ == "__main__":
-    Nlayers = 4
-    node_comb = [7, 20, 10, 1]
-    steps = 5e4
+    Nlayers = 2
+    node_comb = [11, 1]
+    steps = 1e4
     ANN(Nlayers = Nlayers, N_nodes= node_comb, training_iterations = steps)
