@@ -32,10 +32,28 @@ def shuffle_data(data):
     p = np.random.permutation(len(data))
     return data[p]
 
-def get_data(database = 'p3ht.db', ratio = 0.90):
+def get_data(database = 'p3ht.db', ratio = 0.95, forward_hops_only = False):
 
     data = load_database(database)
+    data = shuffle_data(data)
+
+    chromo_IDs = data[:,:2]
     data = data[:,2:]
+
+    if forward_hops_only is True:
+        print("ONLY CONSIDERING FORWARD HOPS")
+        chromo_IDs = list(chromo_IDs)
+        data = list(data)
+        indices_to_delete = []
+        for index, chromo_ID_pair in enumerate(chromo_IDs):
+            if chromo_ID_pair[0] > chromo_ID_pair[1]:
+                indices_to_delete.append(index)
+        indices_to_delete = sorted(indices_to_delete, reverse=True)
+        for index in indices_to_delete:
+            chromo_IDs.pop(index)
+            data.pop(index)
+        chromo_IDs = np.array(chromo_IDs)
+        data = np.array(data)
 
     #data = shuffle_data(data)
 
@@ -48,7 +66,7 @@ def get_data(database = 'p3ht.db', ratio = 0.90):
 
     cut_off = int(len(data)*ratio)
 
-    return features[:cut_off,:], answers[:cut_off,:], features[cut_off:,:], answers[cut_off:,:]
+    return features[:cut_off,:], answers[:cut_off,:], features[cut_off:,:], answers[cut_off:,:], chromo_IDs
 
 def weights(input_vector, in_nodes, out_nodes):
     W = tf.random_normal(shape=[in_nodes, out_nodes], mean=0.2, stddev=0.2)
@@ -73,11 +91,35 @@ def plot_comparison(actual, predicted):
     plt.ylabel("Predicted")
     plt.savefig("Ann_comp.png")
 
-def ANN(Nlayers = 1, N_nodes= [1], training_iterations = 5e4, run_name = "", show_comparison = False):
+def find_largest_deviations(chromo_IDs, pred_y, actual_y):
+    differences = np.array(actual_y) - np.array(pred_y)
+    dictionary = {}
+    error_dictionary = {diff[0]: chromo_IDs[index] for index, diff in enumerate(list(differences))}
+    sorted_keys = sorted(error_dictionary.keys())
+    print("Largest underestimations =")
+    for i in range(10):
+        print("Chromos =", error_dictionary[sorted_keys[i]], "difference =", sorted_keys[i])
+    print("\nLargest overestimations =")
+    for i in range(1, 11):
+        print("Chromos =", error_dictionary[sorted_keys[-i]], "difference =", sorted_keys[-i])
+    return error_dictionary
 
-    training_vectors, training_answers, validation_vectors, validation_answers = get_data(database = 'p3ht.db', ratio = 0.90)
 
-    assert Nlayers == len(N_nodes) 
+def plot_error_hist(error_dictionary):
+    plt.figure()
+    plt.hist(list(error_dictionary.keys()), bins=100)
+    plt.xlabel("Error")
+    plt.ylabel("Frequency")
+    plt.xlim([-0.5, 0.5])
+    plt.show()
+    plt.savefig("./error_histogram_all.png")
+
+def ANN(Nlayers = 1, N_nodes= [1], training_iterations = 5e4, run_name = "", show_comparison = False, forward_hops_only = False):
+
+    training_vectors, training_answers, validation_vectors, validation_answers, chromo_IDs = get_data(database = 'p3ht.db', ratio = 0.95, forward_hops_only = forward_hops_only)
+
+    assert Nlayers == len(N_nodes)
+
 
     x = tf.placeholder(tf.float32, shape = [None, len(training_vectors[0])])
     y_ = tf.placeholder(tf.float32, shape = [None, 1])
@@ -119,10 +161,14 @@ def ANN(Nlayers = 1, N_nodes= [1], training_iterations = 5e4, run_name = "", sho
 
     pred_y = session.run(y_out, feed_dict={x: validation_vectors})
 
+    error_dictionary = find_largest_deviations(chromo_IDs, pred_y, validation_answers)
+    plot_error_hist(error_dictionary)
     plot_comparison(validation_answers, pred_y)
-    
+
+
 if __name__ == "__main__":
     Nlayers = 2
     node_comb = [11, 1]
     steps = 1e4
-    ANN(Nlayers = Nlayers, N_nodes= node_comb, training_iterations = steps)
+    forward_hops_only = False
+    ANN(Nlayers = Nlayers, N_nodes= node_comb, training_iterations = steps, forward_hops_only = forward_hops_only)

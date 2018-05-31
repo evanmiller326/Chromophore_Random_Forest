@@ -1,5 +1,6 @@
 import numpy as np
 from morphct.code import helper_functions as hf
+from morphct.utils import KMC_analyse as kmc_a
 import sys
 import sqlite3
 import os
@@ -70,6 +71,8 @@ def create_data_base(database, systems):
         to_execute += "rotY REAL, "
         to_execute += "rotZ REAL, "
         to_execute += "deltaE REAL, "
+        to_execute += "same_chain INT, "
+        to_execute += "sulfur_distance REAL, "
         to_execute += "TI REAL"
         to_execute += ");"
         cursor.execute(to_execute)
@@ -103,9 +106,9 @@ def add_to_database(table, data, database):
     cursor = connection.cursor()
     div_data = chunks(data)
     for chunk in div_data:
-        for chromophoreA, chromophoreB, posX, posY, posZ, rotX, rotY, rotZ, deltaE, TI in chunk:
-            query = "INSERT INTO {} VALUES( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);".format(table)
-            cursor.execute(query, (chromophoreA, chromophoreB, posX, posY, posZ, rotX, rotY, rotZ, deltaE, TI))
+        for chromophoreA, chromophoreB, posX, posY, posZ, rotX, rotY, rotZ, deltaE, same_chain, sulfur_distance, TI in chunk:
+            query = "INSERT INTO {} VALUES( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);".format(table)
+            cursor.execute(query, (chromophoreA, chromophoreB, posX, posY, posZ, rotX, rotY, rotZ, deltaE, same_chain, sulfur_distance, TI))
     connection.commit()
     cursor.close()
     connection.close()
@@ -274,7 +277,77 @@ def fill_dict(vector_dict,
             vector_dict[i]['vec3'] = v3
     return vector_dict
 
-def run_system(table, infile, molecule_dict, species):
+def identify_chains(input_dictionary, chromophore_list):
+    print("Identifying chain numbers...")
+    # Create a lookup table `neighbour list' for all connected atoms called {bondedAtoms}
+    bonded_atoms = hf.obtain_bonded_list(input_dictionary['bond'])
+    molecule_list = [i for i in range(len(input_dictionary['type']))]
+    # Recursively add all atoms in the neighbour list to this molecule
+    for mol_ID in range(len(molecule_list)):
+        molecule_list = update_molecule(mol_ID, molecule_list, bonded_atoms)
+    # Create a dictionary of the molecule data
+    molecule_data = {}
+    for atom_ID in range(len(input_dictionary['type'])):
+        if molecule_list[atom_ID] not in molecule_data:
+            molecule_data[molecule_list[atom_ID]] = [atom_ID]
+        else:
+            molecule_data[molecule_list[atom_ID]].append(atom_ID)
+    # Now map the AAID data back to the chromophores
+    # Reverse the molecule_data dictionary
+    reverse_lookup_dict = {value: key for key, val in molecule_data.items() for value in val}
+    chromos_in_mol = {}
+    for chromophore in chromophore_list:
+        mol_no = reverse_lookup_dict[chromophore.AAIDs[0]]
+        if mol_no not in chromos_in_mol.keys():
+            chromos_in_mol[mol_no] = [chromophore.ID]
+        else:
+            chromos_in_mol[mol_no] += [chromophore.ID]
+    chromos_by_mol_list = [np.array(chromos_in_mol[index]) for index in sorted(chromos_in_mol.keys())]
+    return chromos_by_mol_list
+
+
+def update_molecule(atom_ID, molecule_list, bonded_atoms):
+    # Recursively add all neighbours of atom number atomID to this molecule
+    try:
+        for bonded_atom in bonded_atoms[atom_ID]:
+            # If the moleculeID of the bonded atom is larger than that of the current one,
+            # update the bonded atom's ID to the current one's to put it in this molecule,
+            # then iterate through all of the bonded atom's neighbours
+            if molecule_list[bonded_atom] > molecule_list[atom_ID]:
+                molecule_list[bonded_atom] = molecule_list[atom_ID]
+                molecule_list = update_molecule(bonded_atom, molecule_list, bonded_atoms)
+            # If the moleculeID of the current atom is larger than that of the bonded one,
+            # update the current atom's ID to the bonded one's to put it in this molecule,
+            # then iterate through all of the current atom's neighbours
+            elif molecule_list[bonded_atom] < molecule_list[atom_ID]:
+                molecule_list[atom_ID] = molecule_list[bonded_atom]
+                molecule_list = update_molecule(atom_ID, molecule_list, bonded_atoms)
+            # Else: both the current and the bonded atom are already known to be in this
+            # molecule, so we don't have to do anything else.
+    except KeyError:
+        # This means that there are no bonded CG sites (i.e. it's a single molecule)
+        pass
+    return molecule_list
+
+def get_sulfur_separation(chromo1, chromo2, relative_image, box, AA_morphology_dict):
+    types1 = [AA_morphology_dict['type'][AAID] for AAID in chromo1.AAIDs]
+    types2 = [AA_morphology_dict['type'][AAID] for AAID in chromo2.AAIDs]
+    sulfur_index1 = types1.index('S')
+    sulfur_index2 = types2.index('S')
+    sulfur_pos1 = np.array(AA_morphology_dict['position'][chromo1.AAIDs[sulfur_index1]])
+    sulfur_pos2 = np.array(AA_morphology_dict['position'][chromo2.AAIDs[sulfur_index2]]) + np.array(np.array(relative_image) * np.array(box))
+    return np.sqrt(np.sum((sulfur_pos2 - sulfur_pos1)**2))
+
+
+def check_same_chain(molecule_list, index1, index2, mers):
+    molA = molecule_list[index1//mers]
+    if index2 in molA:
+        same = 1
+    else:
+        same = 0
+    return same
+
+def run_system(table, infile, molecule_dict, species, mers=15):
     """
     Calculate the relative orientational
     data for pairs of chromophores.
@@ -304,10 +377,14 @@ def run_system(table, infile, molecule_dict, species):
 
     data = []  # List for storing the calculated data
 
+    molecule_list = identify_chains(AA_morphology_dict, chromophore_list)
+    sulfur_distances = []
+
     #Because DBP has fullerenes, iterate only up to
     #where the system is DBP
 
     #Iterate through all the chromophores.
+    print("Extracting descriptors from all chromophores...")
     for i, chromophore in enumerate(chromophore_list):
         #Only get the desired acceptor or donor index, needed for blends.
         if chromophore.species == species:
@@ -315,8 +392,16 @@ def run_system(table, infile, molecule_dict, species):
             for neighbor in zip(chromophore.neighbours, chromophore.neighbours_delta_E, chromophore.neighbours_TI):
                 index1 = i
                 index2 = neighbor[0][0]  # Gets the neighbor's index
+                relative_image = neighbor[0][1] # Gets the neighbour's image
                 dE = neighbor[1]  # Get the difference in energy
                 TI = neighbor[2]  # Get the transfer integral
+
+                same_chain = check_same_chain(molecule_list, index1, index2, mers)
+                if os.path.splitext(molecule_dict['database'])[0].lower() == 'p3ht':
+                    sulfur_distance = get_sulfur_separation(chromophore, chromophore_list[index2], relative_image, box[0], AA_morphology_dict)
+                else:
+                    sulfur_distance = 0
+
                 if TI > 0:  # Consider only pairs that will have hops.
 
                     #Get the location of the other chromophore and make sure they're in the
@@ -351,6 +436,19 @@ def run_system(table, infile, molecule_dict, species):
                     new_length = np.linalg.norm(transformed_separation_vec)
                     assert np.isclose(old_length, new_length)
 
+                    # import matplotlib.pyplot as plt
+                    # import mpl_toolkits.mplot3d as p3
+                    # fig = plt.figure()
+                    # ax = p3.Axes3D(fig)
+                    # plt.plot([0, centers_vec[0]], [0, centers_vec[1]], zs=[0, centers_vec[2]], c='b', label="Original")
+                    # plt.plot([0, vdict1['vec3'][0]], [0, vdict1['vec3'][1]], zs=[0, vdict1['vec3'][2]], c='c', label="Orig Vec3")
+                    # plt.plot([0, transformed_separation_vec[0]], [0, transformed_separation_vec[1]], zs=[0, transformed_separation_vec[2]], c='r', label="Rotated")
+                    # rotated_vec3 = np.matmul(rotation_matrix, vdict1['vec3'])
+                    # plt.plot([0, rotated_vec3[0]], [0, rotated_vec3[1]], zs=[0, rotated_vec3[2]], c='m', label="Rotated Vec3")
+                    # plt.legend()
+                    # plt.show()
+
+
                     posX = centers_vec[0]
                     posY = centers_vec[1]
                     posZ = centers_vec[2]
@@ -364,6 +462,8 @@ def run_system(table, infile, molecule_dict, species):
                         rotY,
                         rotZ,
                         dE,
+                        same_chain,
+                        sulfur_distance,
                         TI])
 
                     data.append(datum) #Write the data to the list
