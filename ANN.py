@@ -60,9 +60,9 @@ def get_data(database = 'p3ht.db', ratio = 0.95, forward_hops_only = False):
     features = data[:,:-1]
     answers = np.array([data[:,-1]]).T
 
-    scaler = preprocessing.StandardScaler().fit(features)
-    features = scaler.transform(features)
-    #features = normalize(features)
+    #scaler = preprocessing.StandardScaler().fit(features)
+    #features = scaler.transform(features)
+    features = normalize(features)
 
     cut_off = int(len(data)*ratio)
 
@@ -84,9 +84,10 @@ def get_batch(vectors, labels):
 def build_layer(x, W, b):
     return tf.add(tf.matmul(x,W),b)
 
-def plot_comparison(actual, predicted):
+def plot_comparison(actual, predicted, rmse):
     plt.scatter(actual, predicted, zorder=0, alpha = 0.5, s=12)
     plt.plot(np.linspace(0, np.amax(actual), 10), np.linspace(0, np.amax(actual), 10), c='k', zorder = 10)
+    plt.title("ANN-RMSE-{:.5f}".format(rmse))
     plt.xlabel("Actual")
     plt.ylabel("Predicted")
     plt.savefig("Ann_comp.png")
@@ -111,7 +112,6 @@ def plot_error_hist(error_dictionary):
     plt.xlabel("Error")
     plt.ylabel("Frequency")
     plt.xlim([-0.5, 0.5])
-    plt.show()
     plt.savefig("./error_histogram_all.png")
 
 def ANN(Nlayers = 1, N_nodes= [1], training_iterations = 5e4, run_name = "", show_comparison = False, forward_hops_only = False):
@@ -161,14 +161,17 @@ def ANN(Nlayers = 1, N_nodes= [1], training_iterations = 5e4, run_name = "", sho
 
     pred_y = session.run(y_out, feed_dict={x: validation_vectors})
 
+    rmse = session.run(cost,feed_dict={x:validation_vectors,y_:validation_answers})
+
     error_dictionary = find_largest_deviations(chromo_IDs, pred_y, validation_answers)
-    plot_error_hist(error_dictionary)
-    plot_comparison(validation_answers, pred_y)
+
+    #plot_error_hist(error_dictionary)
+    plot_comparison(validation_answers, pred_y, rmse)
 
 
 if __name__ == "__main__":
     Nlayers = 2
-    node_comb = [11, 1]
-    steps = 1e4
+    node_comb = [9, 1]
+    steps = 2e4
     forward_hops_only = False
     ANN(Nlayers = Nlayers, N_nodes= node_comb, training_iterations = steps, forward_hops_only = forward_hops_only)

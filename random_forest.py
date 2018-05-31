@@ -6,6 +6,7 @@ from pandas.tools.plotting import scatter_matrix
 
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_squared_error
 
 from sklearn.tree import export_graphviz
 import pydot
@@ -145,10 +146,12 @@ if __name__ == "__main__":
     print(df.nlargest(10, 'errors'))
 
     #print(df.loc[df['Chromophore1'].isin([10204, 10205, 10206, 10207]) & df['Chromophore2'].isin([10046, 10047, 10048, 10049])])
+    rmse = mean_squared_error(test_labels, predictions)
 
     plt.close()
     plt.scatter(test_labels, predictions, s= 12, alpha = 0.5, zorder=0)
     plt.plot(np.linspace(0, np.amax(test_labels.values), 10), np.linspace(0, np.amax(test_labels.values), 10), c='k', zorder=10)
+    plt.title("RMSE-{:.5f}".format(rmse))
     plt.ylabel("Predicted TI")
     plt.xlabel("Actual TI")
     plt.savefig("comparison.png")
