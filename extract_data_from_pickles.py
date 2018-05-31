@@ -129,7 +129,6 @@ def check_vector(va, vb, box):
 
     #Move the vector so they are in the same periodic image
     va = vb - temp_vec
-
     return va
 
 def vector_along_mol(a, b, c, box):
@@ -335,8 +334,11 @@ def get_sulfur_separation(chromo1, chromo2, relative_image, box, AA_morphology_d
     sulfur_index1 = types1.index('S')
     sulfur_index2 = types2.index('S')
     sulfur_pos1 = np.array(AA_morphology_dict['position'][chromo1.AAIDs[sulfur_index1]])
-    sulfur_pos2 = np.array(AA_morphology_dict['position'][chromo2.AAIDs[sulfur_index2]]) + np.array(np.array(relative_image) * np.array(box))
-    return np.sqrt(np.sum((sulfur_pos2 - sulfur_pos1)**2))
+    sulfur_pos2 = np.array(AA_morphology_dict['position'][chromo2.AAIDs[sulfur_index2]])
+    pre_pbc_separation = np.sqrt(np.sum(sulfur_pos2 - sulfur_pos1)**2)
+    sulfur_pos1 = check_vector(sulfur_pos1, sulfur_pos2, [box])
+    separation = np.sqrt(np.sum(sulfur_pos2 - sulfur_pos1)**2)
+    return separation
 
 
 def check_same_chain(molecule_list, index1, index2, mers):
@@ -587,29 +589,6 @@ def get_molecule_dictionary(mol):
                 'atom_indices':[0, 20, 38]}}
     return molecules[mol]
 
-def rename_DBP_systems_to_sql_friendly():
-    """
-    Helper function to rename the DBP
-    pickle files to be an sql friendly naming
-    scheme so that the sql tables can use the
-    file names.
-    Requires:
-        None
-    Returns:
-        None
-    """
-    directory = "training_data/DBP"
-    pickle_files = glob(directory+'/*.pickle')
-
-    for pickle in pickle_files:
-        name = pickle.split('/')[-1]
-        assert len(name.split('.')) > 2
-        #Only allow the rename if there are too many periods.
-        name = name.split("-")
-        mol = name[1]
-        temps = name[-1].split(".")
-        name = "DBP_{}_{}_{}.pickle".format(mol, temps[0], temps[1])
-        os.rename(pickle, os.path.join(directory, name))
 
 def rename_input_pickles(directory):
     pickle_files = glob(os.path.join(directory, "*.pickle"))
