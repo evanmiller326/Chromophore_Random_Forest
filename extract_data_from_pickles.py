@@ -1,5 +1,6 @@
 import numpy as np
 from morphct.code import helper_functions as hf
+from morphct.utils import KMC_analyse as kmc_a
 import sys
 import sqlite3
 import os
@@ -70,6 +71,7 @@ def create_data_base(database, systems):
         to_execute += "rotY REAL, "
         to_execute += "rotZ REAL, "
         to_execute += "deltaE REAL, "
+        to_execute += "same_chain INT, "
         to_execute += "TI REAL"
         to_execute += ");"
         cursor.execute(to_execute)
@@ -103,9 +105,9 @@ def add_to_database(table, data, database):
     cursor = connection.cursor()
     div_data = chunks(data)
     for chunk in div_data:
-        for chromophoreA, chromophoreB, posX, posY, posZ, rotX, rotY, rotZ, deltaE, TI in chunk:
-            query = "INSERT INTO {} VALUES( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);".format(table)
-            cursor.execute(query, (chromophoreA, chromophoreB, posX, posY, posZ, rotX, rotY, rotZ, deltaE, TI))
+        for chromophoreA, chromophoreB, posX, posY, posZ, rotX, rotY, rotZ, deltaE, same_chain, TI in chunk:
+            query = "INSERT INTO {} VALUES( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);".format(table)
+            cursor.execute(query, (chromophoreA, chromophoreB, posX, posY, posZ, rotX, rotY, rotZ, deltaE, same_chain, TI))
     connection.commit()
     cursor.close()
     connection.close()
@@ -274,7 +276,18 @@ def fill_dict(vector_dict,
             vector_dict[i]['vec3'] = v3
     return vector_dict
 
-def run_system(table, infile, molecule_dict, species):
+def identify_chains(N, mers):
+    return [np.arange(j*mers, (j+1)*mers) for j in range(N)]
+
+def check_same_chain(molecule_list, index1, index2, mers):
+    molA = molecule_list[index1//mers]
+    if index2 in molA:
+        same = 1
+    else:
+        same = 0
+    return same
+
+def run_system(table, infile, molecule_dict, species, mers=15):
     """
     Calculate the relative orientational
     data for pairs of chromophores.
@@ -304,6 +317,8 @@ def run_system(table, infile, molecule_dict, species):
 
     data = []  # List for storing the calculated data
 
+    molecule_list = identify_chains(n_species, mers)
+
     #Because DBP has fullerenes, iterate only up to
     #where the system is DBP
 
@@ -317,6 +332,9 @@ def run_system(table, infile, molecule_dict, species):
                 index2 = neighbor[0][0]  # Gets the neighbor's index
                 dE = neighbor[1]  # Get the difference in energy
                 TI = neighbor[2]  # Get the transfer integral
+
+                same_chain = check_same_chain(molecule_list, index1, index2, mers)
+
                 if TI > 0:  # Consider only pairs that will have hops.
 
                     #Get the location of the other chromophore and make sure they're in the
@@ -377,6 +395,7 @@ def run_system(table, infile, molecule_dict, species):
                         rotY,
                         rotZ,
                         dE,
+                        same_chain,
                         TI])
 
                     data.append(datum) #Write the data to the list

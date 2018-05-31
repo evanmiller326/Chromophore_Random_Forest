@@ -12,7 +12,7 @@ import pydot
 
 def get_data():
     data_list = []
-    connection = sqlite3.connect("dbp.db")
+    connection = sqlite3.connect("p3ht.db")
     #connection = sqlite3.connect("p3ht.db")
     cursor = connection.cursor()
     query = "SELECT name FROM sqlite_master WHERE type='table';"
@@ -107,7 +107,6 @@ if __name__ == "__main__":
     print(data.shape)
     df = pd.DataFrame(data, columns = ['Chromophore1', 
         'Chromophore2', 
-        'distance',
         'posX',
         'posY',
         'posZ',
@@ -115,6 +114,7 @@ if __name__ == "__main__":
         'rotY',
         'rotZ',
         'DeltaE', 
+        'same_chain', 
         'TI'])
 
     #print("Making dot products absolutes values.")
@@ -123,7 +123,7 @@ if __name__ == "__main__":
     df = df.drop(['Chromophore1', 'Chromophore2'], axis=1)
 
     print("Splitting inputs and outputs")
-    features = df[['posX', 'posY', 'posZ', 'rotX', 'rotY', 'rotZ', 'DeltaE']]
+    features = df[['posX', 'posY', 'posZ', 'rotX', 'rotY', 'rotZ', 'DeltaE', 'same_chain']]
     y = df[['TI']]
     print(features.shape, y.shape)
 
