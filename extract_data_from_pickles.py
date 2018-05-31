@@ -72,6 +72,7 @@ def create_data_base(database, systems):
         to_execute += "rotZ REAL, "
         to_execute += "deltaE REAL, "
         to_execute += "same_chain INT, "
+        to_execute += "sulfur_distance REAL, "
         to_execute += "TI REAL"
         to_execute += ");"
         cursor.execute(to_execute)
@@ -105,9 +106,9 @@ def add_to_database(table, data, database):
     cursor = connection.cursor()
     div_data = chunks(data)
     for chunk in div_data:
-        for chromophoreA, chromophoreB, posX, posY, posZ, rotX, rotY, rotZ, deltaE, same_chain, TI in chunk:
-            query = "INSERT INTO {} VALUES( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);".format(table)
-            cursor.execute(query, (chromophoreA, chromophoreB, posX, posY, posZ, rotX, rotY, rotZ, deltaE, same_chain, TI))
+        for chromophoreA, chromophoreB, posX, posY, posZ, rotX, rotY, rotZ, deltaE, same_chain, sulfur_distance, TI in chunk:
+            query = "INSERT INTO {} VALUES( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);".format(table)
+            cursor.execute(query, (chromophoreA, chromophoreB, posX, posY, posZ, rotX, rotY, rotZ, deltaE, same_chain, sulfur_distance, TI))
     connection.commit()
     cursor.close()
     connection.close()
@@ -327,7 +328,16 @@ def update_molecule(atom_ID, molecule_list, bonded_atoms):
         # This means that there are no bonded CG sites (i.e. it's a single molecule)
         pass
     return molecule_list
-    
+
+def get_sulfur_separation(chromo1, chromo2, relative_image, box, AA_morphology_dict):
+    types1 = [AA_morphology_dict['type'][AAID] for AAID in chromo1.AAIDs]
+    types2 = [AA_morphology_dict['type'][AAID] for AAID in chromo2.AAIDs]
+    sulfur_index1 = types1.index('S')
+    sulfur_index2 = types2.index('S')
+    sulfur_pos1 = np.array(AA_morphology_dict['position'][chromo1.AAIDs[sulfur_index1]])
+    sulfur_pos2 = np.array(AA_morphology_dict['position'][chromo2.AAIDs[sulfur_index2]]) + np.array(np.array(relative_image) * np.array(box))
+    return np.sqrt(np.sum((sulfur_pos2 - sulfur_pos1)**2))
+
 
 def check_same_chain(molecule_list, index1, index2, mers):
     molA = molecule_list[index1//mers]
@@ -368,11 +378,13 @@ def run_system(table, infile, molecule_dict, species, mers=15):
     data = []  # List for storing the calculated data
 
     molecule_list = identify_chains(AA_morphology_dict, chromophore_list)
+    sulfur_distances = []
 
     #Because DBP has fullerenes, iterate only up to
     #where the system is DBP
 
     #Iterate through all the chromophores.
+    print("Extracting descriptors from all chromophores...")
     for i, chromophore in enumerate(chromophore_list):
         #Only get the desired acceptor or donor index, needed for blends.
         if chromophore.species == species:
@@ -380,10 +392,15 @@ def run_system(table, infile, molecule_dict, species, mers=15):
             for neighbor in zip(chromophore.neighbours, chromophore.neighbours_delta_E, chromophore.neighbours_TI):
                 index1 = i
                 index2 = neighbor[0][0]  # Gets the neighbor's index
+                relative_image = neighbor[0][1] # Gets the neighbour's image
                 dE = neighbor[1]  # Get the difference in energy
                 TI = neighbor[2]  # Get the transfer integral
 
                 same_chain = check_same_chain(molecule_list, index1, index2, mers)
+                if os.path.splitext(molecule_dict['database'])[0].lower() == 'p3ht':
+                    sulfur_distance = get_sulfur_separation(chromophore, chromophore_list[index2], relative_image, box[0], AA_morphology_dict)
+                else:
+                    sulfur_distance = 0
 
                 if TI > 0:  # Consider only pairs that will have hops.
 
@@ -446,6 +463,7 @@ def run_system(table, infile, molecule_dict, species, mers=15):
                         rotZ,
                         dE,
                         same_chain,
+                        sulfur_distance,
                         TI])
 
                     data.append(datum) #Write the data to the list
