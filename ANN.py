@@ -62,7 +62,7 @@ def plot_comparison(actual, predicted):
 
 def ANN(Nlayers = 1, N_nodes= [1], training_iterations = 5e4, run_name = "", show_comparison = False):
 
-    training_vectors, training_answers, validation_vectors, validation_answers = get_data(database = 'p3ht.db', ratio = 0.95)
+    training_vectors, training_answers, validation_vectors, validation_answers = get_data(database = 'dbp.db', ratio = 0.95)
 
     assert Nlayers == len(N_nodes) 
 
@@ -110,6 +110,6 @@ def ANN(Nlayers = 1, N_nodes= [1], training_iterations = 5e4, run_name = "", sho
     
 if __name__ == "__main__":
     Nlayers = 4
-    node_comb = [7, 20, 10, 1]
+    node_comb = [7, 14, 7, 1]
     steps = 5e4
     ANN(Nlayers = Nlayers, N_nodes= node_comb, training_iterations = steps)

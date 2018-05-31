@@ -63,6 +63,7 @@ def create_data_base(database, systems):
         to_execute = "CREATE TABLE {}( ".format(table)
         to_execute += "chromophoreA INT, "
         to_execute += "chromophoreB INT, "
+        to_execute += "distance REAL, "
         to_execute += "posX REAL, "
         to_execute += "posY REAL, "
         to_execute += "posZ REAL, "
@@ -103,9 +104,9 @@ def add_to_database(table, data, database):
     cursor = connection.cursor()
     div_data = chunks(data)
     for chunk in div_data:
-        for chromophoreA, chromophoreB, posX, posY, posZ, rotX, rotY, rotZ, deltaE, TI in chunk:
-            query = "INSERT INTO {} VALUES( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);".format(table)
-            cursor.execute(query, (chromophoreA, chromophoreB, posX, posY, posZ, rotX, rotY, rotZ, deltaE, TI))
+        for chromophoreA, chromophoreB, distance, posX, posY, posZ, rotX, rotY, rotZ, deltaE, TI in chunk:
+            query = "INSERT INTO {} VALUES( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);".format(table)
+            cursor.execute(query, (chromophoreA, chromophoreB, distance, posX, posY, posZ, rotX, rotY, rotZ, deltaE, TI))
     connection.commit()
     cursor.close()
     connection.close()
@@ -325,6 +326,8 @@ def run_system(table, infile, molecule_dict, species):
                     #Calculate the distance (normally this is in Angstroms)
                     centers_vec = chromophore.posn - index2_loc
 
+                    distance = np.linalg.norm(centers_vec)
+
                     #Get the vectors describing the two chromophores
                     vdict1 = vector_dict[index1]
                     vdict2 = vector_dict[index2]
@@ -357,6 +360,7 @@ def run_system(table, infile, molecule_dict, species):
                     #Combine the data into an array
                     datum = np.array([index1,
                         index2,
+                        distance,
                         posX,
                         posY,
                         posZ,
@@ -372,7 +376,7 @@ def run_system(table, infile, molecule_dict, species):
 
     add_to_database(table, data, molecule_dict['database']) #Write the data to the database
 
-def manual_load(table, infile, C1_index, C2_index):
+def manual_load(table, infile, C1s, C2s):
     """
     A manual way to load in the data when we only want
     to compare a pair of chromophores.
@@ -384,7 +388,10 @@ def manual_load(table, infile, C1_index, C2_index):
     """
     AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter_dict, chromophore_list = hf.load_pickle(infile)
     box = np.array([[AA_morphology_dict['lx'], AA_morphology_dict['ly'], AA_morphology_dict['lz']]])
-    write_positions_to_xyz(C1_index, C2_index, chromophore_list, AA_morphology_dict, box)
+    for pair in zip(C1s, C2s):
+        C1_index = pair[0]
+        C2_index = pair[1]
+        write_positions_to_xyz(C1_index, C2_index, chromophore_list, AA_morphology_dict, box)
 
 def write_positions_to_xyz(C1_index, C2_index, chromophore_list, AA_morphology_dict, box):
     """
@@ -610,4 +617,4 @@ def main():
 
 if __name__ == "__main__":
     main()
-    #manual_load('crystalline', systems['crystalline'], 0, 1)
+    #manual_load('cryst_frame_7', 'training_data/P3HT/cryst_frame_7.pickle', [1318, 910, 1288, 10606, 1156], [14707, 11141, 3838, 6120, 3377])
