@@ -351,6 +351,19 @@ def run_system(table, infile, molecule_dict, species):
                     new_length = np.linalg.norm(transformed_separation_vec)
                     assert np.isclose(old_length, new_length)
 
+                    # import matplotlib.pyplot as plt
+                    # import mpl_toolkits.mplot3d as p3
+                    # fig = plt.figure()
+                    # ax = p3.Axes3D(fig)
+                    # plt.plot([0, centers_vec[0]], [0, centers_vec[1]], zs=[0, centers_vec[2]], c='b', label="Original")
+                    # plt.plot([0, vdict1['vec3'][0]], [0, vdict1['vec3'][1]], zs=[0, vdict1['vec3'][2]], c='c', label="Orig Vec3")
+                    # plt.plot([0, transformed_separation_vec[0]], [0, transformed_separation_vec[1]], zs=[0, transformed_separation_vec[2]], c='r', label="Rotated")
+                    # rotated_vec3 = np.matmul(rotation_matrix, vdict1['vec3'])
+                    # plt.plot([0, rotated_vec3[0]], [0, rotated_vec3[1]], zs=[0, rotated_vec3[2]], c='m', label="Rotated Vec3")
+                    # plt.legend()
+                    # plt.show()
+
+
                     posX = centers_vec[0]
                     posY = centers_vec[1]
                     posZ = centers_vec[2]
