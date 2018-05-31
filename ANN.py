@@ -5,7 +5,7 @@ import sqlite3
 import sklearn
 from sklearn.preprocessing import normalize
 from sklearn.preprocessing import normalize
-from sklearn import preprocessing 
+from sklearn import preprocessing
 
 import matplotlib.pyplot as plt
 
@@ -66,7 +66,7 @@ def get_data(database = 'p3ht.db', ratio = 0.95, forward_hops_only = False):
 
     cut_off = int(len(data)*ratio)
 
-    return features[:cut_off,:], answers[:cut_off,:], features[cut_off:,:], answers[cut_off:,:], chromo_IDs
+    return features[:cut_off,:], answers[:cut_off,:], features[cut_off:,:], answers[cut_off:,:], chromo_IDs[cut_off:,:]
 
 def weights(input_vector, in_nodes, out_nodes):
     W = tf.random_normal(shape=[in_nodes, out_nodes], mean=0.2, stddev=0.2)
@@ -92,17 +92,34 @@ def plot_comparison(actual, predicted, rmse):
     plt.ylabel("Predicted")
     plt.savefig("Ann_comp.png")
 
+
+def parallel_sort(a, b):
+    temp_a = np.copy(np.array(a))
+    temp_b = np.copy(np.array(b))
+    return zip(*sorted(zip(temp_a, temp_b)))
+
+
 def find_largest_deviations(chromo_IDs, pred_y, actual_y):
     differences = np.array(actual_y) - np.array(pred_y)
     dictionary = {}
     error_dictionary = {diff[0]: chromo_IDs[index] for index, diff in enumerate(list(differences))}
+    _, sorted_predictions = zip(*sorted(zip(np.copy(differences), pred_y)))
+    _, sorted_actual = zip(*sorted(zip(np.copy(differences), actual_y)))
     sorted_keys = sorted(error_dictionary.keys())
-    print("Largest underestimations =")
-    for i in range(10):
-        print("Chromos =", error_dictionary[sorted_keys[i]], "difference =", sorted_keys[i])
     print("\nLargest overestimations =")
+    for i in range(10):
+        print("Chromos =", error_dictionary[sorted_keys[i]], "difference =", sorted_keys[i], ", predicted =", sorted_predictions[i], "actual =", sorted_actual[i])
+    print("\nLargest underestimations =")
     for i in range(1, 11):
-        print("Chromos =", error_dictionary[sorted_keys[-i]], "difference =", sorted_keys[-i])
+        print("Chromos =", error_dictionary[sorted_keys[-i]], "difference =", sorted_keys[-i], ", predicted =", sorted_predictions[-i], "actual =", sorted_actual[-i])
+    print("\nLargest underestimations with predicted TIs < 0.01 eV (`the shelf') =")
+    n = 0
+    for i in range(len(sorted_keys)):
+        if sorted_predictions[-i] < 0.01:
+            print("Chromos =", error_dictionary[sorted_keys[-i]], "difference =", sorted_keys[-i], ", predicted =", sorted_predictions[-i], "actual =", sorted_actual[-i])
+            n += 1
+        if n == 10:
+            break
     return error_dictionary
 
 
