@@ -143,6 +143,7 @@ if __name__ == "__main__":
     df['errors'] = predictions - test_labels
     df['predicted'] = df[['errors', 'TI']].sum(axis=1)
 
+    print("Mean Deviation =", df['errors'].mean())
     print(df.nlargest(10, 'errors'))
 
     #print(df.loc[df['Chromophore1'].isin([10204, 10205, 10206, 10207]) & df['Chromophore2'].isin([10046, 10047, 10048, 10049])])
