@@ -3,6 +3,7 @@ import sqlite3
 import pandas as pd
 import matplotlib.pyplot as plt
 from pandas.tools.plotting import scatter_matrix
+from scipy import stats
 
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import train_test_split
@@ -13,8 +14,8 @@ import pydot
 
 def get_data():
     data_list = []
-    #connection = sqlite3.connect("dbp.db")
-    connection = sqlite3.connect("p3ht.db")
+    connection = sqlite3.connect("dbp.db")
+    #connection = sqlite3.connect("p3ht.db")
     cursor = connection.cursor()
     query = "SELECT name FROM sqlite_master WHERE type='table';"
     cursor.execute(query)
@@ -138,6 +139,7 @@ if __name__ == "__main__":
 
     print("Making predictions on tests")
     predictions = np.array([reg.predict(test_features)]).T
+    slope, intercept, r_value, p_value, std_err = stats.linregress(test_labels.values.flatten(), predictions.flatten())
 
     print("Calculating error.")
     df['errors'] = predictions - test_labels
@@ -149,10 +151,12 @@ if __name__ == "__main__":
     #print(df.loc[df['Chromophore1'].isin([10204, 10205, 10206, 10207]) & df['Chromophore2'].isin([10046, 10047, 10048, 10049])])
     rmse = mean_squared_error(test_labels, predictions)
 
+
     plt.close()
     plt.scatter(test_labels, predictions, s= 12, alpha = 0.5, zorder=0)
     plt.plot(np.linspace(0, np.amax(test_labels.values), 10), np.linspace(0, np.amax(test_labels.values), 10), c='k', zorder=10)
-    plt.title("RMSE-{:.5f}".format(rmse))
+    #plt.title("RMSE-{:.5f}".format(rmse))
+    plt.title(r"r$^2$={:.3f}".format(r_value**2))
     plt.ylabel("Predicted TI")
     plt.xlabel("Actual TI")
     plt.savefig("comparison.png")
