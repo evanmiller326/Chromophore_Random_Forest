@@ -25,7 +25,7 @@ txt3 <- paste("RMSE =",round(rf_fit3$prediction.error,digits=4))
 ##-----------------##
 ## Model 4 - add sulfur
 mod4_dat <- tab1_model[,c(3:ncol(tab1_model))]
-rf_fit4 <- ranger(TI~.,data=mod4_dat,min.node.size = 6, mtry=8)
+rf_fit4 <- ranger(TI~.,data=mod4_dat,min.node.size = 6, mtry=8,importance = "impurity")
 txt4 <- paste0("RMSE = ",round(rf_fit4$prediction.error,digits=4)-.0001,"0")
 
 ##-------------##
@@ -57,6 +57,14 @@ qplot(totpos,TI,data=filter(tab1_model,sc==0),colour=rotY,alpha=I(.4))+xlab("Dis
 ggsave("~/Desktop/MATDATSlides/TI_vs_dist_sc_0.png",width=6,height=4)
 
 
-sc0 <- filter(tab1_model,sc==0)
-qplot(rotY,data=tab1_model,geom='density')
-
+#Feature importance
+var_imp <- data.frame(Index=1:32,Imp=rf_fit4$variable.importance,Name=colnames(tab1_model)[3:34])
+var_imp$Name <- as.character(var_imp$Name)
+var_imp$Name[var_imp$Imp<200] <- ""
+var_imp$Name <- gsub("totpos","Distance",var_imp$Name)
+var_imp$Name <- gsub("sc","Same Chain",var_imp$Name)
+var_imp$Name <- gsub("dist_","Dist-by-",var_imp$Name)
+var_imp$Name <- gsub("sulfur_","Sulfur-by-",var_imp$Name)
+qplot(Index,Imp,data=var_imp)+geom_text(aes(Index,Imp,label=Name),nudge_x = -5,nudge_y=-5)+xlim(c(0,35))+
+  ylab("Variable Importance")+xlab("")
+ggsave("~/Desktop/MATDATSlides/varimp.png",width=8,height=5)
