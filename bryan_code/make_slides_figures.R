@@ -18,15 +18,15 @@ txt2 <- paste("RMSE =",round(rf_fit2$prediction.error,digits=4))
 
 ##-----------------##
 ## Model 3 - add sc
-mod3_dat <- tab1_model[,c(3:30,33:ncol(tab1_model))]
-rf_fit3 <- ranger(TI~.,data=mod3_dat,min.node.size = 6, mtry=8)
+mod3_dat <- tab1_model[,c(3:8,32:ncol(tab1_model))]
+rf_fit3 <- ranger(TI~.,data=mod3_dat,min.node.size = 6)
 txt3 <- paste("RMSE =",round(rf_fit3$prediction.error,digits=4))
 
 ##-----------------##
 ## Model 4 - add sulfur
-mod4_dat <- tab1_model[,c(3:ncol(tab1_model))]
-rf_fit4 <- ranger(TI~.,data=mod4_dat,min.node.size = 6, mtry=8,importance = "impurity")
-txt4 <- paste0("RMSE = ",round(rf_fit4$prediction.error,digits=4)-.0001,"0")
+mod4_dat <- tab1_model[,c(3:8,30:ncol(tab1_model))]
+rf_fit4 <- ranger(TI~.,data=mod4_dat,min.node.size = 6, importance = "impurity")
+txt4 <- paste0("RMSE = ",round(rf_fit4$prediction.error,digits=4))
 
 ##-------------##
 #Put together into GIF
@@ -58,13 +58,12 @@ ggsave("~/Desktop/MATDATSlides/TI_vs_dist_sc_0.png",width=6,height=4)
 
 
 #Feature importance
-var_imp <- data.frame(Index=1:32,Imp=rf_fit4$variable.importance,Name=colnames(tab1_model)[3:34])
+var_imp <- data.frame(Index=1:9,Imp=rf_fit4$variable.importance,Name=names(rf_fit4$variable.importance))
 var_imp$Name <- as.character(var_imp$Name)
-var_imp$Name[var_imp$Imp<200] <- ""
+var_imp$Name[var_imp$Imp<125] <- ""
 var_imp$Name <- gsub("totpos","Distance",var_imp$Name)
 var_imp$Name <- gsub("sc","Same Chain",var_imp$Name)
-var_imp$Name <- gsub("dist_","Dist-by-",var_imp$Name)
-var_imp$Name <- gsub("sulfur_","Sulfur-by-",var_imp$Name)
-qplot(Index,Imp,data=var_imp)+geom_text(aes(Index,Imp,label=Name),nudge_x = -5,nudge_y=-5)+xlim(c(0,35))+
+var_imp$Name <- gsub("rotY","Y Rotation",var_imp$Name)
+qplot(Index,Imp,data=var_imp)+geom_text(aes(Index,Imp,label=Name),nudge_x = -.5,nudge_y=50)+xlim(c(0,10))+
   ylab("Variable Importance")+xlab("")
-ggsave("~/Desktop/MATDATSlides/varimp.png",width=8,height=5)
+ggsave("~/Desktop/MATDATSlides/varimp.png",width=7,height=5)
