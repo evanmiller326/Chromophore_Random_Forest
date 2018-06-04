@@ -120,18 +120,36 @@ Of the methods explored, random-forest decision tree techniques provided the mos
 \textcolor{red}{$<$I expect Bryan will have more to say about this section$>$}
 
 
-\subsection{Why is a continuation warranted and promising?}
+%\subsection{Why is a continuation warranted and promising?}
 
 The small average errors in our models prediction is extremely promising for machine learning techniques to be able to evaluate tens of thousands of \textit{in situ} in a matter of minutes instead of days.
 \textcolor{red}{EVAN PUT YOUR FIGURE HERE}
 Figure \ref{fig:random_forest_results} shows that optimisations to our model can still be made.
-We intend to explore more combinations of descriptors to tighten up the model and reduce the average error by still further, to a target value of 10 meV.
+We intend to determine which descriptors (or combinations thereof) are required in order to tighten up the model and reduce the average error by still further, to a target value of 10 meV.
+The transferability of this model to other statepoints and chemistries also needs to be thoroughly investigated.
+For instance, how does the accuracy of the model change for replicant systems processed at the same statepoint?
+If we now consider the same molecules but processed at a different statepoint, resulting in a different nanostructure, do we need to re-calibrate our model in order to obtain the same high level of accuracy?
+What about if we consider a different polymer, or a different chemistry entirely (for instance, a small molecule system)?
+
+
+%\subsection{Why is this important to materials research?}
+Ideally, we will be able to configure our model to be as chemistry and processing agnostic as possible to allow maximum transferability to other organic systems.
+This will allow the wider materials science community to predict electronic properties for a wide database of molecules that we expect to release to the research community through open-source hosting methods.
+A sufficiently accurate model can be used instead of quantum chemical calculations, resulting in a marked decrease in computation time and resources required for organic researchers.
+
+
+\textcolor{red}{Up to here}
 
 
 \subsection{What could be achieved with additional resources?}
 
+The current dataset to be used for training and testing consists of around 500 unique morphologies, covering 10 chemistries including polymers, fullerenes, block co-polymers and polycyclic aromatic hydrocarbons, each with at least 3 processing state points above and 3 state points below an order-disorder transition temperature for each chemistry.
+Each morphology contains, on average, 100,000 atoms resulting in $\sim$20,000 chromophore pairs per morphology.
+Each pair creates an output file in text format, with size $\sim$50 KB, describing the 3-dimensional positions of the constituent atoms as well as the scalar molecular orbital energies.
+In total, we have already generated electronic properties data for over 10,000,000 chromophore pairs, corresponding to several hundreds of GB of raw data.
+All data was generated using the open source MorphCT\cite{MorphCT,Jones2017}, HOOMD-Blue\cite{Anderson08}, and ORCA\cite{Neese2012b} software suites and will be made freely available through digital hosting provided by the Albertsons Library at Boise State University.
 
-\subsection{Why is this important to materials research?}
+
 
 \subsection{Why is this important to data science?}
 
@@ -139,16 +157,6 @@ We intend to explore more combinations of descriptors to tighten up the model an
 
 \subsection{External data resources and cyberinfrastructure}
 
-
-Neural networks are an especially promising candidate due to their efficient parallelizability to be executed on GPUs, bringing the rest of the simulation pipeline in line with the molecular dynamics simulations\cite{Oh2004}.
-We will train our model using the wealth of data already obtained from the pipeline and by providing key structural descriptors such as position and orientation of chromophore pairs in the system, and then measure its accuracy in predicting transfer integrals for preliminary data left out of the training set.
-We also aim to train a separate network to predict the relative deviations in energy levels between chromophores to obtain the $\Delta E_{ij}$ term in equation \ref{eq:Marcus}, effectively replacing both of the slowest components of the pipeline.
-
-The current dataset to be used for training and testing consists of around 500 unique morphologies, covering 10 chemistries including polymers, fullerenes, block co-polymers and polycyclic aromatic hydrocarbons, each with at least 3 processing state points above and 3 state points below an order-disorder transition temperature for each chemistry.
-Each morphology contains, on average, 100,000 atoms resulting in $\sim$20,000 chromophore pairs per morphology.
-Each pair creates an output file in text format, with size $\sim$50 KB, describing the 3-dimensional positions of the constituent atoms as well as the scalar molecular orbital energies.
-In total, we have already generated electronic properties data for over 10,000,000 chromophore pairs, corresponding to several hundreds of GB of raw data.
-All data was generated using the open source MorphCT\cite{MorphCT,Jones2017}, HOOMD-Blue\cite{Anderson08}, and ORCA\cite{Neese2012b} software suites and will be made freely available through digital hosting provided by the Albertsons Library at Boise State University.
 
 \newpage
 
