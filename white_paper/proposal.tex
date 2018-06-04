@@ -123,7 +123,15 @@ Of the methods explored, random-forest decision tree techniques provided the mos
 %\subsection{Why is a continuation warranted and promising?}
 
 The small average errors in our models prediction is extremely promising for machine learning techniques to be able to evaluate tens of thousands of \textit{in situ} in a matter of minutes instead of days.
-\textcolor{red}{EVAN PUT YOUR FIGURE HERE}
+\begin{wrapfigure}{lb}{0.5\textwidth}\centering
+	\includegraphics[width=0.5\textwidth]{Figures/comparison.pdf}
+    \caption{
+The comparison of the transfer integrals calculated by ZINDO/S compared to those predicted by the random forest.
+This produces an average absolute error of 30 meV and an $R^2$ value of 0.978.
+}
+	\label{fig:random_forest_results}
+%\end{figure}
+\end{wrapfigure}
 Figure \ref{fig:random_forest_results} shows that optimisations to our model can still be made.
 We intend to determine which descriptors (or combinations thereof) are required in order to tighten up the model and reduce the average error by still further, to a target value of 10 meV.
 The transferability of this model to other statepoints and chemistries also needs to be thoroughly investigated.
