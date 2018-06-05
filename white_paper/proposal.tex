@@ -81,7 +81,8 @@ Therefore, in order to manufacture the most efficient devices, it is vital to op
 The molecular morphology can be influenced by the choices of chemistries in the system, as well as the device processing conditions such as temperature, pressure, solvent choice, and annealing duration\cite{Noriega2013}.
 This massive phase space necessitates the use of computational methods (rather than manufacturing hundreds of millions of test devices in a wet lab) that are capable of spanning multiple length- and time-scales.
 
-\clearpage
+Carriers move through the morphology via quantised tunnelling events - `hops' - between electronically active functional groups on the molecules known as `chromophores'.
+The rate at which a carrier hop can occur from chromophore $i$ to chromophore $j$, $k_{ij}$, is given by the Marcus expression\cite{Marcus1964}:
 \begin{wrapfigure}{lb}{0.5\textwidth}\centering
 %\begin{figure}[h!]\centering
 %\vspace{1em}
@@ -94,9 +95,6 @@ This massive phase space necessitates the use of computational methods (rather t
 	\label{fig:fig1}
 %\end{figure}
 \end{wrapfigure}
-
-Carriers move through the morphology via quantised tunnelling events - `hops' - between electronically active functional groups on the molecules known as `chromophores'.
-The rate at which a carrier hop can occur from chromophore $i$ to chromophore $j$, $k_{ij}$, is given by the semi-classical Marcus expression\cite{Marcus1964}:
 \begin{equation}\label{eq:Marcus}
     k_{ij} = \frac{\left| T_{ij} \right|^{2}}{\hbar} \sqrt{\frac{\pi}{\lambda k_{B} T}} \exp \left[ - \frac{(\Delta E_{ij} + \lambda)^{2}}{4 \lambda k_{B} T} \right],
 \end{equation}
@@ -119,15 +117,7 @@ As such, we consider only geometric descriptors for each pair, constructed from 
 
 At MATDAT18, we explored the efficacy of linear models (e.g, simple linear regression and semi-parametric penalized splines) as well as artificial neural networks and kernel-based methods (e.g., support vector machines) in predicting the transfer integrals, each of which were trained using a selection of the 40,000 data points.
 The spline based approaches were able to identify meaningful change points within each feature as well as the interactions between features, however, the strict linear form of these models proved too restrictive to adequately predict the non-linear relationship between the features and the transfer integral.
-This non-linear relationship was replicated well by the neural networks (deep and shallow), which were able to predict the transfer integral with reasonable accuracy, but they lack transparent feature importance metrics that would afford us a deeper knowledge of how these features interact in nature.
-Random-forest decision tree techniques proved to be both the most accurate and produced transparent feature importance metrics.
-The random forest fits resulted in a correlation coefficient of $r^{2} = 0.978$, corresponding to an average absolute error of 30 meV, far below the expected 100 meV accuracy of even the most computationally intensive quantum chemical predictions.
-%\textcolor{red}{$<$I expect Bryan will have more to say about this section$>$}
-
-
-%\subsection{Why is a continuation warranted and promising?}
-
-The small average errors in our predictions provide an extremely promising `proof-of-concept' for machine learning techniques to be able to evaluate tens of thousands of transfer integrals \textit{in situ} in a matter of minutes instead of days.
+This non-linear relationship was replicated well by the neural networks (deep and shallow), which were able to predict the transfer integral with reasonable accuracy.
 \begin{wrapfigure}{lb}{0.5\textwidth}\centering
 	\includegraphics[width=0.5\textwidth]{Figures/comparison.pdf}
     \caption{
@@ -137,6 +127,15 @@ This produces an average absolute error of 30 meV and an $R^2$ value of 0.978.
 	\label{fig:random_forest_results}
 %\end{figure}
 \end{wrapfigure}
+However, the neural networks lack transparent feature importance metrics that would afford us a deeper knowledge of how these features interact in nature.
+Random-forest decision tree techniques proved to be both the most accurate and produced transparent feature importance metrics.
+The random forest fits resulted in a correlation coefficient of $r^{2} = 0.978$, corresponding to an average absolute error of 30 meV, far below the expected 100 meV accuracy of even the most computationally intensive quantum chemical predictions.
+%\textcolor{red}{$<$I expect Bryan will have more to say about this section$>$}
+
+
+%\subsection{Why is a continuation warranted and promising?}
+
+The small average errors in our predictions provide an extremely promising `proof-of-concept' for machine learning techniques to be able to evaluate tens of thousands of transfer integrals \textit{in situ} in a matter of minutes instead of days.
 Figure \ref{fig:random_forest_results} shows that there is still room for further optimization of our model to provide more accurate predictions of the TI.
 We intend to determine which descriptors (or combinations thereof) are required in order to tighten up the model and reduce the average error still further, to a target value of 10 meV.
 The transferability of this model to other statepoints and chemistries also needs to be thoroughly investigated.
@@ -153,7 +152,7 @@ Open data repositories such as the Harvard Clean Energy Project database contain
 Our work here will allow researchers to investigate many more of these molecules at many more statepoints in the same amount of time, helping us to more strongly connect morphology and performance, leading us closer to a set of design rules for the most efficient devices.
 
 
-\subsection{What could be achieved with additional resources?}
+%\subsection{What could be achieved with additional resources?}
 
 
 Our current database of quantum chemical calculations consists of around 500 unique morphologies, covering 10 chemistries including polymers, fullerenes, block co-polymers and polycyclic aromatic hydrocarbons, each with at least 3 processing state points above and 3 state points below an order-disorder transition temperature for each chemistry.
@@ -166,11 +165,11 @@ The improved runtime of the machine learning models will then permit us to expan
 We then intend to make our transfer integral database freely available to the research community to assist further exploration of organic semiconductor behaviour.
 
 
-\subsection{Why is this important to data science?}
+%\subsection{Why is this important to data science?}
 
 
 A data science shortcoming exposed by this material problem is the fact that so many modern analytical techniques are geared towards the big data problem both in the feature space and dataset size.
-In this problem, there are a large number of data points to train on, but the feature set is relatively small ($\approx$10 features).
+In this problem, there are a large number of data points to train on, but the feature set is relatively small ($\sim$10 features).
 Compounding this issue is the highly non-linear relationship between the features and output, which makes it difficult to faithfully model with most machine learning techniques.
 Over the course of MATDAT18, we used data visualizations and measures of correlation to define feature interactions that were then fed into various machine learning algorithms.
 However, very few of them proved to play a role in the final model.
@@ -184,9 +183,9 @@ Specifically, we propose to use feature engineering to drastically expand our fe
 $<$ Eric's doing this bit $>$
 
 
-\subsection{External data resources and cyberinfrastructure}
+%\subsection{External data resources and cyberinfrastructure}
 
-All preliminary data has been generated using the open source MorphCT\cite{Jones2017}, HOOMD-Blue\cite{Anderson08}, and ORCA\cite{Neese2012b} software suites, and are currently hosted online by the Albertson's Library at Boise State University\cite{MatDat18Data}.
+All preliminary data has been generated using the open source MorphCT\cite{Jones2017}, HOOMD-Blue\cite{ANDERSON20085342}, and ORCA\cite{Neese2012b} software suites, and are currently hosted online by the Albertson's Library at Boise State University\cite{MatDat18Data}.
 The morphologies were generated using local computing hybrid CPU/GPU infrastructure at Boise State University, supported by the National Science Foundation under Grant No 1229709.
 This work also used the Extreme Science and Engineering Discovery Environment (XSEDE), which is supported by National Science Foundation Grant Number ACI-1053575.
 These resources will be also be available for subsequent data generation for this proposal.
