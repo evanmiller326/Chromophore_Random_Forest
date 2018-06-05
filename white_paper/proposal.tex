@@ -144,27 +144,36 @@ What about if we consider a different polymer, or a different chemistry entirely
 Ideally, we will be able to configure our model to be as chemistry and processing agnostic as possible to allow maximum transferability to other organic systems.
 This will allow the wider materials science community to predict electronic properties for a wide database of molecules that we expect to release to the research community through open-source hosting methods.
 A sufficiently accurate model can be used instead of quantum chemical calculations, resulting in a marked decrease in computation time and resources required for organic researchers.
-
-
-\textcolor{red}{Up to here}
+Reducing computational time is a critical step for facilitating large-scale parameter sweeps harnessing high-performance computing clusters to identify the best candidates for efficient organic electronic devices.
+As an example, open data repositories such as the Harvard Clean Energy Project database contain millions of candidate molecules - a currently untenably large dataset for investigating charge transport properties.
+Our work here will allow researchers to investigate many more of these systems at many more statepoints in the same amount of time, helping us to more strongly connect morphology and performance, with the aim of constructing a robust set of design rules for the most efficient devices.
 
 
 \subsection{What could be achieved with additional resources?}
 
-The current dataset to be used for training and testing consists of around 500 unique morphologies, covering 10 chemistries including polymers, fullerenes, block co-polymers and polycyclic aromatic hydrocarbons, each with at least 3 processing state points above and 3 state points below an order-disorder transition temperature for each chemistry.
-Each morphology contains, on average, 100,000 atoms resulting in $\sim$20,000 chromophore pairs per morphology.
-Each pair creates an output file in text format, with size $\sim$50 KB, describing the 3-dimensional positions of the constituent atoms as well as the scalar molecular orbital energies.
-In total, we have already generated electronic properties data for over 10,000,000 chromophore pairs, corresponding to several hundreds of GB of raw data.
-All data was generated using the open source MorphCT\cite{MorphCT,Jones2017}, HOOMD-Blue\cite{Anderson08}, and ORCA\cite{Neese2012b} software suites and will be made freely available through digital hosting provided by the Albertsons Library at Boise State University.
-
-
+Our current database of quantum chemical calculations consists of around 500 unique morphologies, covering 10 chemistries including polymers, fullerenes, block co-polymers and polycyclic aromatic hydrocarbons, each with at least 3 processing state points above and 3 state points below an order-disorder transition temperature for each chemistry.
+This corresponds to the electronic properties data for over 10,000,000 chromophore pairs, although a portion of these ($\sim$20\%) are unnecessary `repeat' calculations resulting in negligible transfer integrals.
+With additional resources, we can increase the accuracy of our current models, and determine their transferrability to other statepoints and chemistries.
+Ideally, we already have sufficient data to construct a sufficiently accurate machine learning model, and so we envisage not having to perform significantly more quantum chemical calculations.
+The worst-case scenario according to our preliminary results is that we require the generation of a new model for each new chemistry.
+Even in this case, performing a set of quantum chemical calculations for the top 50 most promising candidates according to the Clean Energy Project database seems reasonable.
+The improved runtime of the machine learning models will then permit us to expand our transfer integral database to include dramatically more statepoints for each system - aiming for 20 to 30 statepoints per chemistry, in order to fully explore the morphology landscape of the molecular blend.
+We then intend to make our transfer integral database freely available to the research community to assist further exploration of organic semiconductor behaviour.
 
 \subsection{Why is this important to data science?}
 
+$<$ Bryan's doing this bit $>$
+
 \subsection{Budget}
+
+$<$ Eric's doing this bit $>$
 
 \subsection{External data resources and cyberinfrastructure}
 
+All preliminary data has been generated using the open source MorphCT\cite{Jones2017}, HOOMD-Blue\cite{Anderson08}, and ORCA\cite{Neese2012b} software suites, and are currently hosted online by the Albertson's Library at Boise State University \textcolor{red}{CITE}.
+The morphologies were generated using local computing hybrid CPU/GPU infrastructure at Boise State University, funded by \textcolor{red}{CITE FUNDING}.
+These resources will be also be available for subsequent data generation for this proposal.
+In addition, we have access to 5,000 SUs through XSEDE on the high-performance GPU cluster XSTREAM, with the intent to apply for an increase to that allocation in the future.
 
 \newpage
 
