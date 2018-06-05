@@ -114,8 +114,10 @@ We propose using machine learning techniques to streamline the quantum chemical 
 Our preliminary work has investigated a semi-crystalline test system containing 1,000 oligomers of poly(3-hexylthiophene), each of length 15 monomers.
 For each pair of nearest-neighbour monomers, we use semi-empirical quantum chemical calculations to predict the electronic transfer integrals, for a total of 40,000 data points.
 In general, monomers are defined by the locations of their constituent atoms and bonds, and the transfer integral can be determined by considering the relative position of each monomer to its neighbour.
-As such, we consider only geometric descriptors for each pair, constructured from 6 independent labels corresponding to relative translations in three dimensions, and relative rotations around three orthogonal axes.
-We explored the efficacy of linear models (such as splines and regression), as well as artificial neural networks and kernel-based methods (support vector machines) in predicting the transfer integrals, each of which were trained using a selection of the 40,000 data points.
+As such, we consider only geometric descriptors for each pair, constructed from 6 independent labels corresponding to relative translations in three dimensions, and relative rotations around three orthogonal axes.
+
+At MATDAT18, we explored the efficacy of linear models (e.g, simple linear regression and semi-parametric penalized splines) as well as artificial neural networks and kernel-based methods (e.g., support vector machines) in predicting the transfer integrals, each of which were trained using a selection of the 40,000 data points.  The spline based approaches were able to identify meaningful change points within each feature as well as the interactions between features, however, the strict linear form of these models proved too restrictive to adequately predict the non-linear relationship between the features and the transfer integral. 
+
 Of the methods explored, random-forest decision tree techniques provided the most accurate, resulting in a correlation coefficient of $r^{2} = 0.976$, corresponding to an average absolute error of 34 meV, far below the expected 100 meV accuracy of even the most computationally intensive quantum chemical predictions.
 \textcolor{red}{$<$I expect Bryan will have more to say about this section$>$}
 
