@@ -158,8 +158,9 @@ In total, we have already generated electronic properties data for over 10,000,0
 All data was generated using the open source MorphCT\cite{MorphCT,Jones2017}, HOOMD-Blue\cite{Anderson08}, and ORCA\cite{Neese2012b} software suites and will be made freely available through digital hosting provided by the Albertsons Library at Boise State University.
 
 
-
 \subsection{Why is this important to data science?}
+
+A data science shortcoming exposed by this material problem is the fact that so many modern analytical techniques are geared towards the big data problem both in the feature space and dataset size.  In this problem, there are a large number of data points to train on, but the feature set is relatively small ($\approx$10 features).  Compounding this issue is the highly non-linear relationship between the features and output, which makes it difficult to faithfully model with most machine learning techniques.  Over the course of MATDAT18, we used data visualizations and measures of correlation to define feature interactions that were then fed into various machine learning algorithms, however very few of them proved to play a role in the final model.  Data driven interactions identified by the semi-parametric spline regressions and random forests proved much more predictive, but we believer more, higher order interactions could further improve the model but have not been identified yet.  To accomplish this, more sophisticated variable search algorithms, e.g.~genetic algorithms, will need to be modified for this purpose.  In particular, we propose to use feature engineering to drastically expand our feature space then genetic algorithms to identify those that are the most predictive of transfer integral.
 
 \subsection{Budget}
 
