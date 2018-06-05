@@ -4,3 +4,9 @@ training_data
 *.pdf
 *.xyz
 *.npy
+*.blg
+*.bib
+*.aux
+*.bbl
+*.log
+*.out
