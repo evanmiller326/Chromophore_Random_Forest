@@ -73,7 +73,7 @@ Our hypothesis is that machine learning techniques, trained on a small subset of
 This will dramatically reduce the number of expensive calculations to be performed and facilitate high-throughput parameter-sweep studies of the vast phase space of candidate chemistries and processing methodologies, with the aim of developing a robust set of design-rules for manufacturing efficient devices.
 
 
-Organic semiconductors are becoming an increasing popular alternative to conventional inorganics in the construction of electronic devices\cite{Tsumura1986,Friend1999,Sariciftci1992} thanks to recent advances in synthetic chemistry and scalability of low-cost manufacturing processes. %Citation?
+Organic semiconductors are becoming an increasing popular alternative to conventional inorganics in the construction of electronic devices\cite{Tsumura1986,Friend1999,Sariciftci1992} thanks to recent advances in synthetic chemistry and scalability of low-cost manufacturing processes\cite{Krebs2010,Brabec2011}. %Citation?
 However, the efficiency of organic devices (and particularly organic photovoltaics) tends to be significantly lower than conventional devices.
 In particular, the charge-carrier mobility describes the speed at which electrons and holes can move through the active layer of the device, and is a crucial descriptor of device efficiency\cite{Sirringhaus2014}.
 The mobility depends sensitively on the morphology of the active layer, which describes the relative positions and orientations of the component molecules.
@@ -111,7 +111,7 @@ Performing quantum chemical calculations for each pair of chromophores therefore
 
 We propose using machine learning techniques to streamline the quantum chemical portion of the pipeline by predicting carrier transfer integrals between pairs of chromophores.
 Our preliminary work has investigated a semi-crystalline test system containing 1,000 oligomers of poly(3-hexylthiophene), each of length 15 monomers.
-For each pair of nearest-neighbor monomers, we use semi-empirical quantum chemical calculations to predict the electronic transfer integrals, for a total of 40,000 data points. %Where is 40,000 coming from? In 1000 15mer P3HT we have ~ 150,000 pairs.
+For each pair of nearest-neighbor monomers, we use semi-empirical quantum chemical calculations to predict the electronic transfer integrals, for a total of 150,000 data points.
 In general, monomers are defined by the locations of their constituent atoms and bonds, and the transfer integral can be determined by considering the relative position of each monomer to its neighbor.
 As such, we consider only geometric descriptors for each pair, constructed from 6 independent labels corresponding to relative translations in three dimensions, and relative rotations around three orthogonal axes.
 
@@ -160,7 +160,7 @@ This corresponds to the electronic properties data for over 10,000,000 chromopho
 With additional resources, we can increase the accuracy of our current models, and determine their transferrability to other statepoints and chemistries.
 According to our preliminary results, calibrating a model for a single statepoint appears to have good transferability to other statepoints, suggesting that in the worst-case scenario is that we require the generation of a new model for each new chemistry, which can then be used to predict a wide range of statepoints.
 % Probably want to include one or both of the graphs Evan made on Tuesday night here to prove our claim?
-Even in this case, performing a set of quantum chemical calculations for the top 50 most promising candidates according to the Clean Energy Project database is achievable.%Changed from 'seems reasonable' to 'is achievable'.
+Even in this case, performing a set of quantum chemical calculations for the top 50 most promising candidates according to the Clean Energy Project database is achievable.
 The improved runtime of the machine learning models will then permit us to expand our transfer integral database to include dramatically more statepoints for each system - aiming for 20 to 30 statepoints per chemistry, in order to fully explore the morphology landscape of the molecular blend.
 We then intend to make our transfer integral database freely available to the research community to assist further exploration of organic semiconductor behaviour.
 
