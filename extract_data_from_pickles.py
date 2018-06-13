@@ -592,6 +592,16 @@ def get_molecule_dictionary(mol):
             "subdir": "training_data/DBP/*.pickle",
             "atom_indices": [0, 20, 38],
         },
+        "bdt": {
+            "database": "bdt.db",
+            "subdir": "training_data/bdt/*.pickle",
+            "atom_indices": [-1, -1, -1],
+        },
+        "tpd": {
+            "database": "tpd.db",
+            "subdir": "training_data/tpd/*.pickle",
+            "atom_indices": [-1, -1, -1],
+        },
     }
     return molecules[mol]
 
