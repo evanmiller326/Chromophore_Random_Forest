@@ -158,7 +158,7 @@ def vector_along_mol(a, b, c, box):
 
 def vector_along_back(a, b, box):
     """
-    Calculate the vector across the 
+    Calculate the vector across the
     molecule.
     Requires:
         a, b - arrays for two descriptor vectors
@@ -211,7 +211,7 @@ def generate_vectors(indices, positions, box, three_atom_indices):
         three_atom_indices - list, the indices of the desired
             atoms within the indices describing the chromophore
     Returns:
-        v1, v2, v3 - arrays describing the 
+        v1, v2, v3 - arrays describing the
             orientation of the chromophore
     """
     #Get the indices of the atoms within the molecule.
@@ -242,11 +242,11 @@ def generate_empty_dict(N):
 
     return vector_dict
 
-def fill_dict(vector_dict, 
-        chromophore_list, 
-        AA_morphology_dict, 
-        box, 
-        species, 
+def fill_dict(vector_dict,
+        chromophore_list,
+        AA_morphology_dict,
+        box,
+        species,
         three_atom_indices):
     """
     Iterate through the chromophore list and
@@ -266,9 +266,9 @@ def fill_dict(vector_dict,
     #Get the vectors for all the chromophores of the desired species:
     for i, chromophore in enumerate(chromophore_list):
         if chromophore.species == species:
-            v1, v2, v3 = generate_vectors(chromophore.CGIDs, 
-                    AA_morphology_dict['position'], 
-                    box, 
+            v1, v2, v3 = generate_vectors(chromophore.CGIDs,
+                    AA_morphology_dict['position'],
+                    box,
                     three_atom_indices)
             #Write the vectors to the dictionary.
             vector_dict[i]['vec1'] = v1
@@ -370,11 +370,11 @@ def run_system(table, infile, molecule_dict, species, mers=15):
     #Set up the periodic simulation box into a single variable.
     box = np.array([[AA_morphology_dict['lx'], AA_morphology_dict['ly'], AA_morphology_dict['lz']]])
 
-    vector_dict = fill_dict(vector_dict, 
-            chromophore_list, 
-            AA_morphology_dict, 
-            box, 
-            species, 
+    vector_dict = fill_dict(vector_dict,
+            chromophore_list,
+            AA_morphology_dict,
+            box,
+            species,
             molecule_dict['atom_indices'])
 
     data = []  # List for storing the calculated data
@@ -544,7 +544,7 @@ def write_positions_to_xyz(C1_index, C2_index, chromophore_list, AA_morphology_d
 def create_systems(subdir):
     """
     Creates a dictionary with table:
-    pickle file pairs. 
+    pickle file pairs.
     The name before the .pickle is used
     as the table name.
     The name of the pickle file must be
@@ -581,12 +581,18 @@ def get_molecule_dictionary(mol):
     Returns:
         molecule dictionary - dict
     """
-    molecules = {'p3ht':{'database':'p3ht.db',
-        'subdir':'training_data/P3HT/*.pickle',
-        'atom_indices':[0, 1, 3]},
-            'dbp':{'database':'dbp.db',
-                'subdir':'training_data/DBP/*.pickle',
-                'atom_indices':[0, 20, 38]}}
+    molecules = {
+        "p3ht": {
+            "database": "p3ht.db",
+            "subdir": "training_data/P3HT/*.pickle",
+            "atom_indices": [0, 1, 3],
+        },
+        "dbp": {
+            "database": "dbp.db",
+            "subdir": "training_data/DBP/*.pickle",
+            "atom_indices": [0, 20, 38],
+        },
+    }
     return molecules[mol]
 
 
