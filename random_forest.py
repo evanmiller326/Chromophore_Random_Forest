@@ -1,5 +1,5 @@
 import numpy as np
-import sqlite3 
+import sqlite3
 import pandas as pd
 import matplotlib.pyplot as plt
 from pandas.tools.plotting import scatter_matrix
@@ -11,10 +11,11 @@ from sklearn.metrics import mean_squared_error
 
 from sklearn.tree import export_graphviz
 import pydot
+import sys
 
-def get_data():
+def get_data(db_name):
     data_list = []
-    connection = sqlite3.connect("dbp.db")
+    connection = sqlite3.connect(db_name)
     #connection = sqlite3.connect("p3ht.db")
     cursor = connection.cursor()
     query = "SELECT name FROM sqlite_master WHERE type='table';"
@@ -62,12 +63,12 @@ def random_search(train_features, test_features, train_labels, test_labels):
                 'min_samples_leaf': min_samples_leaf,
                 'bootstrap': bootstrap}
 
-    reg_random = RandomizedSearchCV(estimator = reg, 
-            param_distributions = random_grid, 
-            n_iter = 50, 
-            cv = 3, 
-            verbose=2, 
-            random_state=42, 
+    reg_random = RandomizedSearchCV(estimator = reg,
+            param_distributions = random_grid,
+            n_iter = 50,
+            cv = 3,
+            verbose=2,
+            random_state=42,
             n_jobs = -1)
 
     reg_random.fit(train_features, train_labels)
@@ -94,9 +95,9 @@ def make_plots(test_labels, predictions, test_features, features):
         plt.close()
         colors = abs(test_features[feature].values)
         colors /= np.amax(colors)
-        plt.scatter(test_labels, predictions, s= 12, alpha = 0.5, zorder=0, c = colors, cmap='jet')
+        #plt.scatter(test_labels, predictions, s= 12, alpha = 0.5, zorder=0, c = colors, cmap='jet')
         plt.plot(np.linspace(0, np.amax(test_labels.values), 10), np.linspace(0, np.amax(test_labels.values), 10), c='k', zorder=10)
-        plt.colorbar()
+        #plt.colorbar()
         plt.ylabel("Predicted TI")
         plt.xlabel("Actual TI")
         plt.title("{}".format(feature))
@@ -105,19 +106,20 @@ def make_plots(test_labels, predictions, test_features, features):
 
 if __name__ == "__main__":
     print("Initializing Data.")
-    data = get_data()
+    db_name = sys.argv[1]
+    data = get_data(db_name)
     print(data.shape)
-    df = pd.DataFrame(data, columns = ['Chromophore1', 
-        'Chromophore2', 
+    df = pd.DataFrame(data, columns = ['Chromophore1',
+        'Chromophore2',
         'posX',
         'posY',
         'posZ',
         'rotX',
         'rotY',
         'rotZ',
-        'DeltaE', 
-        'same_chain', 
-        'sulfur_dist', 
+        'DeltaE',
+        'same_chain',
+        'sulfur_dist',
         'TI'])
 
     #print("Making dot products absolutes values.")
