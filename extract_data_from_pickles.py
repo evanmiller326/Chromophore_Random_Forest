@@ -591,8 +591,18 @@ def get_molecule_dictionary(mol):
             "subdir": "training_data/DBP/*.pickle",
             "atom_indices": [0, 20, 38],
         },
-        "bdt-tpd": {
+        "tpd": {
             "database": "tpd.db",
+            "subdir": "training_data/tpd/*.pickle",
+            "atom_indices": [0, 1, 2],
+        },
+        "bdt": {
+            "database": "bdt.db",
+            "subdir": "training_data/bdt/*.pickle",
+            "atom_indices": [0, 1, 2],
+        },
+        "bdt-tpd": {
+            "database": "bdt-tpd.db",
             "subdir": "training_data/bdt-tpd/*.pickle",
             "atom_indices": [0, 1, 2],
         },
