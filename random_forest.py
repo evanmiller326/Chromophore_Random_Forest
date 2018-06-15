@@ -1,5 +1,6 @@
+import argparse
 import numpy as np
-import sqlite3 
+import sqlite3
 import pandas as pd
 import matplotlib.pyplot as plt
 from pandas.tools.plotting import scatter_matrix
@@ -23,7 +24,7 @@ def get_data(database = 'p3ht.db'):
     cursor.execute(query)
     data = cursor.fetchall()
     for tab in data:
-        query = "select * from {};".format(tab[0])
+        query = "SELECT * FROM {};".format(tab[0])
         cursor.execute(query)
         data = cursor.fetchall()
         data = np.array(data)
@@ -39,7 +40,7 @@ def load_table(table):
     data_list = []
     connection = sqlite3.connect("p3ht.db")
     cursor = connection.cursor()
-    query = "select * from {};".format(table)
+    query = "SELECT * FROM {};".format(table)
     cursor.execute(query)
     data = cursor.fetchall()
     data = np.array(data)
@@ -78,12 +79,12 @@ def random_search(train_features, test_features, train_labels, test_labels):
                 'min_samples_leaf': min_samples_leaf,
                 'bootstrap': bootstrap}
 
-    reg_random = RandomizedSearchCV(estimator = reg, 
-            param_distributions = random_grid, 
-            n_iter = 50, 
-            cv = 3, 
-            verbose=2, 
-            random_state=42, 
+    reg_random = RandomizedSearchCV(estimator = reg,
+            param_distributions = random_grid,
+            n_iter = 50,
+            cv = 3,
+            verbose=2,
+            random_state=42,
             n_jobs = -1)
 
     reg_random.fit(train_features, train_labels)
@@ -126,17 +127,17 @@ def compare_four():
     for table1 in tables:
         for table2 in tables:
             t1 = load_table(table1)
-            df1 = pd.DataFrame(t1, columns = ['Chromophore1', 
-                'Chromophore2', 
+            df1 = pd.DataFrame(t1, columns = ['Chromophore1',
+                'Chromophore2',
                 'posX',
                 'posY',
                 'posZ',
                 'rotX',
                 'rotY',
                 'rotZ',
-                'DeltaE', 
-                'same_chain', 
-                'sulfur_dist', 
+                'DeltaE',
+                'same_chain',
+                'sulfur_dist',
                 'TI'])
 
             df1['posX'] = df1['posX'].abs()
@@ -156,17 +157,17 @@ def compare_four():
             else:
 
                 t2 = load_table(table2)
-                df2 = pd.DataFrame(t2, columns = ['Chromophore1', 
-                    'Chromophore2', 
+                df2 = pd.DataFrame(t2, columns = ['Chromophore1',
+                    'Chromophore2',
                     'posX',
                     'posY',
                     'posZ',
                     'rotX',
                     'rotY',
                     'rotZ',
-                    'DeltaE', 
-                    'same_chain', 
-                    'sulfur_dist', 
+                    'DeltaE',
+                    'same_chain',
+                    'sulfur_dist',
                     'TI'])
 
                 df2['posX'] = df2['posX'].abs()
@@ -191,10 +192,10 @@ def compare_four():
             abserr = np.mean(abs(test_labels.values-predictions))
 
             plt.subplot(len(tables), len(tables), counter)
-            plt.plot(np.linspace(0, np.amax(test_labels.values), 10), 
-                    np.linspace(0, np.amax(test_labels.values), 10), 
+            plt.plot(np.linspace(0, np.amax(test_labels.values), 10),
+                    np.linspace(0, np.amax(test_labels.values), 10),
                     linewidth = 1,
-                    alpha = 0.5, c='k', zorder=10, 
+                    alpha = 0.5, c='k', zorder=10,
                     label = "R^2={:.3f},\nMAE={:.0f} meV".format(r_value**2, abserr*1000))
             plt.scatter(test_labels, predictions, s = 5, alpha = 0.5, zorder=0)
             plt.title("{}-{}".format(table1, table2), fontsize = 7)
@@ -208,22 +209,29 @@ def compare_four():
             del reg, train_features, test_features, train_labels, test_labels
 
 if __name__ == "__main__":
-    compare_four()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-d", "--database",
+                        type=str,
+                        required=True,
+                        help='''Select a database in this directory to use
+                        for the random forest.''')
+    args = parser.parse_args()
+    #compare_four()
 
     print("Initializing Data.")
 
-    data = get_data('3_p3ht_tables.db')
-    df = pd.DataFrame(data, columns = ['Chromophore1', 
-        'Chromophore2', 
+    data = get_data(args.database)
+    df = pd.DataFrame(data, columns = ['Chromophore1',
+        'Chromophore2',
         'posX',
         'posY',
         'posZ',
         'rotX',
         'rotY',
         'rotZ',
-        'DeltaE', 
-        'same_chain', 
-        'sulfur_dist', 
+        'DeltaE',
+        'same_chain',
+        'sulfur_dist',
         'TI'])
 
     df = df.drop(['Chromophore1', 'Chromophore2'], axis=1)
@@ -263,9 +271,9 @@ if __name__ == "__main__":
     abserr = np.mean(abs(test_labels.values-predictions))
 
     plt.close()
-    plt.plot(np.linspace(0, np.amax(test_labels.values), 10), 
-            np.linspace(0, np.amax(test_labels.values), 10), 
-            alpha = 0.5, c='k', zorder=10, 
+    plt.plot(np.linspace(0, np.amax(test_labels.values), 10),
+            np.linspace(0, np.amax(test_labels.values), 10),
+            alpha = 0.5, c='k', zorder=10,
             label = r"R$^2$={:.3f}, MAE={:.0f} meV".format(r_value**2, abserr*1000))
     plt.scatter(test_labels.values, predictions, s= 12, alpha = 0.5, zorder=0)
     #plt.title("RMSE-{:.5f}".format(rmse))
@@ -293,4 +301,4 @@ if __name__ == "__main__":
     print(corr_matrix['TI'].sort_values(ascending=False))
     #scatter_matrix(df, figsize = (12,12), alpha = 0.2)
     #plt.savefig('scatter_matrix.png')
-    joblib.dump(reg, 'saved_random_forest.pkl') 
+    joblib.dump(reg, 'saved_random_forest.pkl')
