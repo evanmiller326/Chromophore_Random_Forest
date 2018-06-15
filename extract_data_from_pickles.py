@@ -107,6 +107,8 @@ def add_to_database(table, data, database):
     div_data = chunks(data)
     for chunk in div_data:
         for chromophoreA, chromophoreB, posX, posY, posZ, rotX, rotY, rotZ, deltaE, same_chain, sulfur_distance, TI in chunk:
+            if (deltaE is None) or (TI is None):
+                continue
             query = "INSERT INTO {} VALUES( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);".format(table)
             cursor.execute(query, (chromophoreA, chromophoreB, posX, posY, posZ, rotX, rotY, rotZ, deltaE, same_chain, sulfur_distance, TI))
     connection.commit()
