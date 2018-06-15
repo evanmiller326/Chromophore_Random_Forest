@@ -51,11 +51,11 @@ def create_data_base(database, systems):
     Arguments:
         database - string for the database name
     """
-    try:
-        os.remove(database)
-    except:
-        print("No {}. Creating New.".format(database))
-        pass
+    #try:
+    #    os.remove(database)
+    #except:
+    #    print("No {}. Creating New.".format(database))
+    #    pass
 
     tables = [key for key, pair in systems.items()]
     connection = sqlite3.connect(database)
