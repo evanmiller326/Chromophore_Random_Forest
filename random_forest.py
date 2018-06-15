@@ -16,30 +16,90 @@ import pydot
 from sklearn.externals import joblib
 
 
-def get_data(database="p3ht.db", table_names=None):
-    records = []
-    # connection = sqlite3.connect("dbp.db")
-    connection = sqlite3.connect("p3ht.db")
-    cursor = connection.cursor()
-    if table_names is None:
+def get_data(database="p3ht.db", training_tables=None, validation_tables=None):
+    training_records = []
+    print("".join(["Loading data from ", database, "..."]))
+    # Obtain training tables first:
+    if training_tables is None:
         # Fetch all tables
+        print("Using all tables to train from...")
+        connection = sqlite3.connect(database)
+        cursor = connection.cursor()
         query = "SELECT name FROM sqlite_master WHERE type='table';"
         cursor.execute(query)
-        table_names = [name[0] for name in cursor.fetchall()]
-    for table_name in table_names:
-        query = "SELECT * FROM {};".format(table_name)
-        cursor.execute(query)
-        data = np.array(cursor.fetchall())
+        training_tables = [name[0] for name in cursor.fetchall()]
+        cursor.close()
+        connection.close()
+    for table_name in training_tables:
+        data = load_table(database, table_name)
         for record in data:
-            records.append(record)
-    cursor.close()
-    connection.close()
-    return np.array(records)
+            training_records.append(record)
+    train_features, train_labels = create_data_frames(np.array(training_records))
+    print("Separating training and test data...")
+    if validation_tables is None:
+        # Split the dataset we have to be 95%:5%
+        return train_test_split(train_features, train_labels, test_size=0.05)
+    else:
+        # Need to load the right validation data:
+        validation_records = []
+        for table_name in validation_tables:
+            data = load_table(database, table_name)
+            for record in data:
+                validation_records.append(record)
+            test_features, test_labels = create_data_frames(np.array(validation_records))
+        return train_features, test_features, train_labels, test_labels
 
 
-def load_table(table):
+def create_data_frames(data):
+    df = pd.DataFrame(
+        data,
+        columns=[
+            "Chromophore1",
+            "Chromophore2",
+            "posX",
+            "posY",
+            "posZ",
+            "rotX",
+            "rotY",
+            "rotZ",
+            "DeltaE",
+            "same_chain",
+            "sulfur_dist",
+            "TI",
+        ],
+    )
+
+    df = df.drop(["Chromophore1", "Chromophore2"], axis=1)
+
+    df["posX"] = df["posX"].abs()
+    df["posY"] = df["posY"].abs()
+    df["posZ"] = df["posZ"].abs()
+    df["rotX"] = df["rotX"].abs()
+    df["rotY"] = df["rotY"].abs()
+    df["rotZ"] = df["rotZ"].abs()
+
+    features = df[
+        [
+            "posX",
+            "posY",
+            "posZ",
+            "rotX",
+            "rotY",
+            "rotZ",
+            "DeltaE",
+            "same_chain",
+            "sulfur_dist",
+        ]
+    ]
+
+    y = df[["TI"]]
+    return features, y
+
+
+
+def load_table(database, table):
     data_list = []
-    connection = sqlite3.connect("p3ht.db")
+    connection = sqlite3.connect(database)
     cursor = connection.cursor()
     query = "SELECT * FROM {};".format(table)
     cursor.execute(query)
@@ -47,7 +107,7 @@ def load_table(table):
     data = np.array(data)
     cursor.close()
     connection.close()
-    return data
+    return np.array(data)
 
 
 def plot_tree(reg):
@@ -294,97 +354,56 @@ if __name__ == "__main__":
                         for the random forest. Default ==
                         'p3ht.db'""",
     )
+    #parser.add_argument(
+    #    "-t",
+    #    "--table",
+    #    nargs='+',
+    #    type=str,
+    #    default=None,
+    #    required=False,
+    #    help="""Select the tables in the database to use
+    #                    for the random forest. Default ==
+    #                    None (will use all tables in DB).
+    #                    E.g. -t T1_5 T1_75 T2_0""",
+    #)
     parser.add_argument(
-        "-t",
-        "--table",
+        '-t',
+        '--training',
         nargs='+',
         type=str,
         default=None,
         required=False,
-        help="""Select the tables in the database to use
-                        for the random forest. Default ==
-                        None (will use all tables in DB).
-                        E.g. -t T1_5 T1_75 T2_0""",
+        help="""Set the table names from the database to be
+                        used as the training data. E.g. -t
+                        T1_5 T1_75 T2_0""",
     )
-    # parser.add_argument(
-    #     '-t',
-    #     '--training',
-    #     nargs='+',
-    #     type=str,
-    #     default=None,
-    #     required=False,
-    #     help="""Set the table names from the database to be
-    #                     used as the training data. E.g. -t
-    #                     T1_5 T1_75 T2_0""",
-    # )
-    # parser.add_argument(
-    #     '-v',
-    #     '--validation',
-    #     nargs='+',
-    #     type=str,
-    #     default=None,
-    #     required=False,
-    #     help="""Set the table names from the database to be
-    #                     used as the validation data. E.g. -v
-    #                     T1_5 T1_75 T2_0""",
-    # )
+    parser.add_argument(
+        '-v',
+        '--validation',
+        nargs='+',
+        type=str,
+        default=None,
+        required=False,
+        help="""Set the table names from the database to be
+                        used as the validation data. E.g. -v
+                        T1_5 T1_75 T2_0""",
+    )
     args = parser.parse_args()
     # compare_four()
 
-    print("Initializing Data.")
-
-    data = get_data(
+    train_features, test_features, train_labels, test_labels = get_data(
         database=args.database,
-        table_names=args.table,
-    )
-    df = pd.DataFrame(
-        data,
-        columns=[
-            "Chromophore1",
-            "Chromophore2",
-            "posX",
-            "posY",
-            "posZ",
-            "rotX",
-            "rotY",
-            "rotZ",
-            "DeltaE",
-            "same_chain",
-            "sulfur_dist",
-            "TI",
-        ],
+        training_tables=args.training,
+        validation_tables=args.validation,
     )
 
-    df = df.drop(["Chromophore1", "Chromophore2"], axis=1)
-
-    df["posX"] = df["posX"].abs()
-    df["posY"] = df["posY"].abs()
-    df["posZ"] = df["posZ"].abs()
-    df["rotX"] = df["rotX"].abs()
-    df["rotY"] = df["rotY"].abs()
-    df["rotZ"] = df["rotZ"].abs()
-
-    features = df[
-        [
-            "posX",
-            "posY",
-            "posZ",
-            "rotX",
-            "rotY",
-            "rotZ",
-            "DeltaE",
-            "same_chain",
-            "sulfur_dist",
-        ]
-    ]
-
-    y = df[["TI"]]
-
-
-    print("Separating training and test data.")
-    train_features, test_features, train_labels, test_labels = train_test_split(
-        features, y, test_size=0.05
-    )
+    # Concatenate the entire dataset
+    # Add the TI columns by concatenating along axis=1
+    df_train = pd.concat([train_features, train_labels], axis=1)
+    df_test = pd.concat([test_features, test_labels], axis=1)
+    # Stitch the training and testing data by concatenating along
+    # axis = 0
+    df = pd.concat([df_train, df_test], axis=0)
 
     reg = normal_run(train_features, train_labels)
 
@@ -431,7 +450,7 @@ if __name__ == "__main__":
     # make_plots(test_labels, predictions, test_features, features)
 
     feature_importances = pd.DataFrame(
-        reg.feature_importances_, index=features.columns, columns=["Importance"]
+        reg.feature_importances_, index=train_features.columns, columns=["Importance"]
     ).sort_values("Importance", ascending=False)
 
     # get_biggest_discrepencies(predictions, test_labels, errors)
