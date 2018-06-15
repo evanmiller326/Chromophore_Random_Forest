@@ -226,7 +226,7 @@ def generate_vectors(indices, positions, box, three_atom_indices):
     v3 = vector_normal(a, b, c, box)
     return v1, v2, v3
 
-def generate_empty_dict(N):
+def generate_empty_dict(chromo_IDs):
     """
     Creates an empty dictionary for each chromophore.
     Requires:
@@ -237,7 +237,7 @@ def generate_empty_dict(N):
     vector_dict = {}
 
     #For each chromophore create an empty dictionary
-    for i in range(N):
+    for i in chromo_IDs:
         vector_dict[i] = {}
 
     return vector_dict
@@ -364,9 +364,8 @@ def run_system(table, infile, molecule_dict, species, mers=15):
 
     #Get the number of the desired species for creating the dictionary
     species_list = [chromophore.species for chromophore in chromophore_list]
-    n_species = species_list.count(species)
-
-    vector_dict = generate_empty_dict(n_species)
+    chromo_IDs = [index for index, chromo_species in enumerate(species_list) if chromo_species == species]
+    vector_dict = generate_empty_dict(chromo_IDs)
     #Set up the periodic simulation box into a single variable.
     box = np.array([[AA_morphology_dict['lx'], AA_morphology_dict['ly'], AA_morphology_dict['lz']]])
 
@@ -582,11 +581,14 @@ def get_molecule_dictionary(mol):
         molecule dictionary - dict
     """
     molecules = {'p3ht':{'database':'p3ht.db',
-        'subdir':'training_data/P3HT/*.pickle',
-        'atom_indices':[0, 1, 3]},
-            'dbp':{'database':'dbp.db',
-                'subdir':'training_data/DBP/*.pickle',
-                'atom_indices':[0, 20, 38]}}
+                         'subdir':'training_data/P3HT/*.pickle',
+                         'atom_indices':[0, 1, 3]},
+                 'dbp':{'database':'dbp.db',
+                        'subdir':'training_data/DBP/*.pickle',
+                        'atom_indices':[0, 20, 38]},
+                 'bdt-tpd':{'database': 'bdt-tpd.db',
+                            'subdir':'training_data/BDT-TPD/*.pickle',
+                            'atom_indices':[0, 1, 2]}}
     return molecules[mol]
 
 
