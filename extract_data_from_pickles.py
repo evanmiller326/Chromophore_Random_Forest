@@ -218,7 +218,9 @@ def generate_vectors(indices, positions, box, three_atom_indices):
     i, j, k = three_atom_indices
 
     #Get positions for the three atoms.
-    a, b, c = positions[indices[i]], positions[indices[j]], positions[indices[k]]
+    a = np.array(positions[indices[i]])
+    b = np.array(positions[indices[j]])
+    c = np.array(positions[indices[k]])
 
     #Get the three vectors
     v1 = vector_along_mol(a, b, c, box)
@@ -266,7 +268,7 @@ def fill_dict(vector_dict,
     #Get the vectors for all the chromophores of the desired species:
     for i, chromophore in enumerate(chromophore_list):
         if chromophore.species == species:
-            v1, v2, v3 = generate_vectors(chromophore.CGIDs, 
+            v1, v2, v3 = generate_vectors(chromophore.AAIDs, 
                     AA_morphology_dict['position'], 
                     box, 
                     three_atom_indices)
@@ -331,8 +333,13 @@ def update_molecule(atom_ID, molecule_list, bonded_atoms):
 def get_sulfur_separation(chromo1, chromo2, relative_image, box, AA_morphology_dict):
     types1 = [AA_morphology_dict['type'][AAID] for AAID in chromo1.AAIDs]
     types2 = [AA_morphology_dict['type'][AAID] for AAID in chromo2.AAIDs]
-    sulfur_index1 = types1.index('S')
-    sulfur_index2 = types2.index('S')
+    try:
+        sulfur_index1 = types1.index('S')
+        sulfur_index2 = types2.index('S')
+    except ValueError:
+        # Fix for old P3HT morphs with Bhatta typing
+        sulfur_index1 = types1.index('S1')
+        sulfur_index2 = types2.index('S1')
     sulfur_pos1 = np.array(AA_morphology_dict['position'][chromo1.AAIDs[sulfur_index1]])
     sulfur_pos2 = np.array(AA_morphology_dict['position'][chromo2.AAIDs[sulfur_index2]])
     pre_pbc_separation = np.sqrt(np.sum(sulfur_pos2 - sulfur_pos1)**2)
@@ -403,7 +410,7 @@ def run_system(table, infile, molecule_dict, species, mers=15):
                 else:
                     sulfur_distance = 0
 
-                if TI > 0:  # Consider only pairs that will have hops.
+                if (TI is None) or (TI > 0):  # Consider only pairs that will have hops.
 
                     #Get the location of the other chromophore and make sure they're in the
                     #same periodic image.
