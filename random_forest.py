@@ -16,7 +16,8 @@ import pydot
 from sklearn.externals import joblib
 
 
-def get_data(database="p3ht.db", training_tables=None, validation_tables=None):
+def get_data(database="p3ht.db", training_tables=None, validation_tables=None,
+             absolute=None):
     training_records = []
     print("".join(["Loading data from ", database, "..."]))
     # Obtain training tables first:
@@ -34,7 +35,8 @@ def get_data(database="p3ht.db", training_tables=None, validation_tables=None):
         data = load_table(database, table_name)
         for record in data:
             training_records.append(record)
-    train_features, train_labels = create_data_frames(np.array(training_records))
+    train_features, train_labels = create_data_frames(np.array(training_records),
+                                                      absolute)
     print("Separating training and test data...")
     if validation_tables is None:
         # Split the dataset we have to be 95%:5%
@@ -46,11 +48,12 @@ def get_data(database="p3ht.db", training_tables=None, validation_tables=None):
             data = load_table(database, table_name)
             for record in data:
                 validation_records.append(record)
-            test_features, test_labels = create_data_frames(np.array(validation_records))
+            test_features, test_labels = create_data_frames(np.array(validation_records),
+                                                            absolute)
         return train_features, test_features, train_labels, test_labels
 
 
-def create_data_frames(data):
+def create_data_frames(data, absolute):
     df = pd.DataFrame(
         data,
         columns=[
@@ -71,12 +74,9 @@ def create_data_frames(data):
 
     df = df.drop(["Chromophore1", "Chromophore2"], axis=1)
 
-    df["posX"] = df["posX"].abs()
-    df["posY"] = df["posY"].abs()
-    df["posZ"] = df["posZ"].abs()
-    df["rotX"] = df["rotX"].abs()
-    df["rotY"] = df["rotY"].abs()
-    df["rotZ"] = df["rotZ"].abs()
+    if absolute is not None:
+        for col_name in absolute:
+            df[col_name] = df[col_name].abs()
 
     features = df[
         [
@@ -354,18 +354,19 @@ if __name__ == "__main__":
                         for the random forest. Default ==
                         'p3ht.db'""",
     )
-    #parser.add_argument(
-    #    "-t",
-    #    "--table",
-    #    nargs='+',
-    #    type=str,
-    #    default=None,
-    #    required=False,
-    #    help="""Select the tables in the database to use
-    #                    for the random forest. Default ==
-    #                    None (will use all tables in DB).
-    #                    E.g. -t T1_5 T1_75 T2_0""",
-    #)
+    parser.add_argument(
+        "-a",
+        "--absolute",
+        nargs='+',
+        type=str,
+        default=None,
+        required=False,
+        help="""When column names are passed, random_forest.py
+                        will exploit symmetries in the
+                        chromophores, and only consider the
+                        absolute values of the specified
+                        descriptors. E.g. -a rotX rotY""",
+    )
     parser.add_argument(
         '-t',
         '--training',

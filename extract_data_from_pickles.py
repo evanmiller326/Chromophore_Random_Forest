@@ -431,7 +431,8 @@ def run_system(table, infile, molecule_dict, species, mers=15):
                     # and below the plane of the molecule, then because
                     # dot(a, b) == - dot(a, -b), we can reduce the dimensionality
                     # of our data further by just taking the absolute value of the
-                    # dot product.
+                    # dot product. THIS IS NOW INCLUDED IN RANDOM_FOREST.PY as
+                    # a toggleable flag.
                     rotY = np.dot(vdict1['vec1'], vdict2['vec1'])
                     rotX = np.dot(vdict1['vec2'], vdict2['vec2'])
                     rotZ = np.dot(vdict1['vec3'], vdict2['vec3'])
