@@ -197,6 +197,28 @@ def make_plots(test_labels, predictions, test_features, features):
         plt.title("{}".format(feature))
         plt.savefig("{}_comparison.png".format(feature))
 
+def plot_actual_vs_predicted(test_labels, predictions, r_value, abserr, name=""):
+    plt.close()
+    plt.plot(
+        np.linspace(0, np.amax(test_labels.values), 10),
+        np.linspace(0, np.amax(test_labels.values), 10),
+        alpha=0.5,
+        c="k",
+        zorder=10,
+        label=r"R$^2$={:.3f}, MAE={:.0f} meV".format(r_value ** 2, abserr * 1000),
+    )
+    plt.scatter(test_labels.values, predictions, s=12, alpha=0.5, zorder=0)
+    plt.legend(fontsize=20)
+    plt.xticks([0.0, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5])
+    plt.yticks([0.0, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5])
+
+    plt.xlabel("Actual TI (eV)")
+    plt.ylabel("Predicted TI (eV)")
+
+    plt.title("{}Act. v. Pred.".format(name))
+
+    plt.savefig("{}comparison.png".format(name))
+    plt.savefig("{}comparison.pdf".format(name))
 
 def compare_four():
     # tables = ['cryst_frame_7', 'cryst_frame_11']
@@ -427,25 +449,7 @@ if __name__ == "__main__":
 
     abserr = np.mean(abs(test_labels.values - predictions))
 
-    plt.close()
-    plt.plot(
-        np.linspace(0, np.amax(test_labels.values), 10),
-        np.linspace(0, np.amax(test_labels.values), 10),
-        alpha=0.5,
-        c="k",
-        zorder=10,
-        label=r"R$^2$={:.3f}, MAE={:.0f} meV".format(r_value ** 2, abserr * 1000),
-    )
-    plt.scatter(test_labels.values, predictions, s=12, alpha=0.5, zorder=0)
-    # plt.title("RMSE-{:.5f}".format(rmse))
-    # plt.title(r"r$^2$={:.3f}".format(r_value**2))
-    plt.legend(fontsize=20)
-    plt.ylabel("Predicted TI (eV)")
-    plt.xticks([0.0, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5])
-    plt.yticks([0.0, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5])
-    plt.xlabel("Actual TI (eV)")
-    plt.savefig("comparison.png")
-    plt.savefig("comparison.pdf")
+    plot_actual_vs_predicted(test_labels, predictions, r_value, abserr)
 
     # make_plots(test_labels, predictions, test_features, features)
 
