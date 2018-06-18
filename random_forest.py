@@ -396,6 +396,7 @@ if __name__ == "__main__":
         database=args.database,
         training_tables=args.training,
         validation_tables=args.validation,
+        absolute=args.absolute,
     )
 
     # Concatenate the entire dataset
