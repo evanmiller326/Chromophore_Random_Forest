@@ -17,7 +17,7 @@ from sklearn.externals import joblib
 
 
 def get_data(database="p3ht.db", training_tables=None, validation_tables=None,
-             absolute=None, skip=None, yval="TI"):
+             absolute=None, skip=[], yval="TI"):
     training_records = []
     print("".join(["Loading data from ", database, "..."]))
     # Obtain training tables first:
@@ -54,6 +54,7 @@ def get_data(database="p3ht.db", training_tables=None, validation_tables=None,
                 validation_records.append(record)
         test_features, test_labels = create_data_frames(np.array(validation_records),
                                                         absolute,
+                                                        all_column_names,
                                                         column_names_to_use,
                                                         yval)
         return train_features, test_features, train_labels, test_labels
