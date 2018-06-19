@@ -57,7 +57,11 @@ def get_data(database="p3ht.db", training_tables=None, validation_tables=None,
                                                         all_column_names,
                                                         column_names_to_use,
                                                         yval)
-        return train_features, test_features, train_labels, test_labels
+
+    test_features.sort_index(axis=1, inplace=True)
+    train_features.sort_index(axis=1, inplace=True)
+
+    return train_features, test_features, train_labels, test_labels
 
 
 def create_data_frames(data, absolute, all_column_names, column_names_to_use,
@@ -441,6 +445,8 @@ if __name__ == "__main__":
 
     reg = normal_run(train_features, train_labels)
 
+    joblib.dump(reg, "saved_random_forest.pkl")
+
     print(reg.get_params())
 
     print("Making predictions on tests")
@@ -478,4 +484,3 @@ if __name__ == "__main__":
     print(corr_matrix["TI"].sort_values(ascending=False))
     # scatter_matrix(df, figsize = (12,12), alpha = 0.2)
     # plt.savefig('scatter_matrix.png')
-    joblib.dump(reg, "saved_random_forest.pkl")
