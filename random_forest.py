@@ -344,6 +344,26 @@ def compare_four():
             plt.savefig("{}_comparison.png".format(len(tables) ** 2))
             del reg, train_features, test_features, train_labels, test_labels
 
+def model_analysis(predictions, test_labels, df):
+    '''
+    Measure how well the model performs
+    '''
+    slope, intercept, r_value, p_value, std_err = stats.linregress(
+        test_labels.values.flatten(), predictions.flatten()
+    )
+    print("Calculating error.")
+    df["errors"] = predictions - test_labels
+
+    df["predicted"] = df[["errors", "TI"]].sum(axis=1)
+
+    print("Mean Deviation =", df["errors"].mean())
+    print(df.nlargest(10, "errors"))
+
+    #rmse = mean_squared_error(test_labels, predictions)
+    abserr = np.mean(abs(test_labels.values - predictions))
+
+    return abserr, r_value
+
 # Needs a fun name
 def wood_chipper(database="p3ht.db", absolute=None, skip=[], yval="TI", training=None, validation=None):
 
@@ -383,21 +403,8 @@ def wood_chipper(database="p3ht.db", absolute=None, skip=[], yval="TI", training
 
     print("Making predictions on tests")
     predictions = np.array([reg.predict(test_features)]).T
-    slope, intercept, r_value, p_value, std_err = stats.linregress(
-        test_labels.values.flatten(), predictions.flatten()
-    )
 
-    print("Calculating error.")
-    df["errors"] = predictions - test_labels
-
-    df["predicted"] = df[["errors", "TI"]].sum(axis=1)
-
-    print("Mean Deviation =", df["errors"].mean())
-    print(df.nlargest(10, "errors"))
-
-    rmse = mean_squared_error(test_labels, predictions)
-
-    abserr = np.mean(abs(test_labels.values - predictions))
+    abserr, r_value = model_analysis(predictions, test_labels, df)
 
     plot_actual_vs_predicted(test_labels, predictions, r_value, abserr)
 
@@ -416,3 +423,10 @@ def wood_chipper(database="p3ht.db", absolute=None, skip=[], yval="TI", training
     print(corr_matrix["TI"].sort_values(ascending=False))
     # scatter_matrix(df, figsize = (12,12), alpha = 0.2)
     # plt.savefig('scatter_matrix.png')
+    # This will overwrite your old store.h5 file!
+    with pd.HDFStore('store.h5', mode='w') as store:
+        store['train_features'] = train_features
+        store['test_features'] = test_features
+        store['train_labels'] = train_labels
+        store['test_labels'] = test_labels
+        store['df'] = df
