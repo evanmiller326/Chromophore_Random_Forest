@@ -390,9 +390,6 @@ def run_system(table, infile, molecule_dict, species, mers=15):
     molecule_list = identify_chains(AA_morphology_dict, chromophore_list)
     sulfur_distances = []
 
-    #Because DBP has fullerenes, iterate only up to
-    #where the system is DBP
-
     #Iterate through all the chromophores.
     print("Extracting descriptors from all chromophores...")
     for i, chromophore in enumerate(chromophore_list):
@@ -412,7 +409,7 @@ def run_system(table, infile, molecule_dict, species, mers=15):
                 else:
                     sulfur_distance = 0
 
-                if (TI is None) or (TI > 0):  # Consider only pairs that will have hops.
+                if (TI is None) or (TI >= 0):  # Consider only pairs that will have hops.
 
                     #Get the location of the other chromophore and make sure they're in the
                     #same periodic image.
