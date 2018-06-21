@@ -12,7 +12,7 @@ The [MorphCT](https://bitbucket.org/cmelab/morphct/src/master/) package is used 
 
 Make a conda env and install:
 
-`conda install sqlite numpy pandas matplotlib scipy scikit-learn pydot tensorflow`
+`conda install sqlite numpy pandas matplotlib scipy scikit-learn pydot tensorflow pytables`
 
 [Morpcht](https://bitbucket.org/cmelab/morphct/src/master/)
 
