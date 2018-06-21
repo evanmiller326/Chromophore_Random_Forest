@@ -1,6 +1,7 @@
 import argparse
 import random_forest as rf
 
+
 def cli_tool():
 
     parser = argparse.ArgumentParser()
@@ -17,7 +18,7 @@ def cli_tool():
     parser.add_argument(
         "-a",
         "--absolute",
-        nargs='+',
+        nargs="+",
         type=str,
         default=None,
         required=False,
@@ -30,7 +31,7 @@ def cli_tool():
     parser.add_argument(
         "-s",
         "--skip",
-        nargs='+',
+        nargs="+",
         type=str,
         default=[],
         required=False,
@@ -49,9 +50,9 @@ def cli_tool():
                         to train on and fit to.""",
     )
     parser.add_argument(
-        '-t',
-        '--training',
-        nargs='+',
+        "-t",
+        "--training",
+        nargs="+",
         type=str,
         default=None,
         required=False,
@@ -60,9 +61,9 @@ def cli_tool():
                         T1_5 T1_75 T2_0""",
     )
     parser.add_argument(
-        '-v',
-        '--validation',
-        nargs='+',
+        "-v",
+        "--validation",
+        nargs="+",
         type=str,
         default=None,
         required=False,
@@ -72,6 +73,7 @@ def cli_tool():
     )
     args = parser.parse_args()
     return args
+
 
 if __name__ == "__main__":
     args = cli_tool()
