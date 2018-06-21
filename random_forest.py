@@ -344,95 +344,27 @@ def compare_four():
             plt.savefig("{}_comparison.png".format(len(tables) ** 2))
             del reg, train_features, test_features, train_labels, test_labels
 
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "-d",
-        "--database",
-        type=str,
-        default="p3ht.db",
-        required=False,
-        help="""Select a database in this directory to use
-                        for the random forest. Default ==
-                        'p3ht.db'""",
-    )
-    parser.add_argument(
-        "-a",
-        "--absolute",
-        nargs='+',
-        type=str,
-        default=None,
-        required=False,
-        help="""When column names are passed, random_forest.py
-                        will exploit symmetries in the
-                        chromophores, and only consider the
-                        absolute values of the specified
-                        descriptors. E.g. -a rotX rotY""",
-    )
-    parser.add_argument(
-        "-s",
-        "--skip",
-        nargs='+',
-        type=str,
-        default=[],
-        required=False,
-        help="""When column names are passed, random_forest.py
-                        will skip over these descriptors, meaning
-                        that the ML will not train on them.
-                        E.g. -s DeltaE""",
-    )
-    parser.add_argument(
-        "-y",
-        "--yval",
-        type=str,
-        default="TI",
-        required=False,
-        help="""When specified, use a feature other than "TI"
-                        to train on and fit to.""",
-    )
-    parser.add_argument(
-        '-t',
-        '--training',
-        nargs='+',
-        type=str,
-        default=None,
-        required=False,
-        help="""Set the table names from the database to be
-                        used as the training data. E.g. -t
-                        T1_5 T1_75 T2_0""",
-    )
-    parser.add_argument(
-        '-v',
-        '--validation',
-        nargs='+',
-        type=str,
-        default=None,
-        required=False,
-        help="""Set the table names from the database to be
-                        used as the validation data. E.g. -v
-                        T1_5 T1_75 T2_0""",
-    )
-    args = parser.parse_args()
+# Needs a fun name
+def wood_chipper(database="p3ht.db", absolute=None, skip=[], yval="TI", training=None, validation=None):
 
     # Don't want to train on the chromophore_IDs!
     chromophore_ID_cols = ["chromophoreA", "chromophoreB"]
     for chromophore_ID_col in chromophore_ID_cols:
-        if chromophore_ID_col not in args.skip:
-            args.skip.append(chromophore_ID_col)
+        if chromophore_ID_col not in skip:
+            skip.append(chromophore_ID_col)
     # Also don't want to train on the answer!
-    if args.yval not in args.skip:
-        args.skip.append(args.yval)
+    if yval not in skip:
+        skip.append(yval)
 
     # compare_four()
 
     train_features, test_features, train_labels, test_labels = get_data(
-        database=args.database,
-        training_tables=args.training,
-        validation_tables=args.validation,
-        absolute=args.absolute,
-        skip=args.skip,
-        yval=args.yval,
+        database=database,
+        training_tables=training,
+        validation_tables=validation,
+        absolute=absolute,
+        skip=skip,
+        yval=yval,
     )
 
     # Concatenate the entire dataset
