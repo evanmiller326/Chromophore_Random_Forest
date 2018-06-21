@@ -423,3 +423,10 @@ def wood_chipper(database="p3ht.db", absolute=None, skip=[], yval="TI", training
     print(corr_matrix["TI"].sort_values(ascending=False))
     # scatter_matrix(df, figsize = (12,12), alpha = 0.2)
     # plt.savefig('scatter_matrix.png')
+    # This will overwrite your old store.h5 file!
+    with pd.HDFStore('store.h5', mode='w') as store:
+        store['train_features'] = train_features
+        store['test_features'] = test_features
+        store['train_labels'] = train_labels
+        store['test_labels'] = test_labels
+        store['df'] = df
