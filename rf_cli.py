@@ -76,5 +76,4 @@ def cli_tool():
 if __name__ == "__main__":
     args = cli_tool()
     opts = vars(args)
-    #print(**opts)
-    print(opts)
+    rf.wood_chipper(**opts)
