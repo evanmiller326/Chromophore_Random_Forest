@@ -7,6 +7,7 @@ import os
 import argparse
 from glob import glob
 
+
 def n_unwrapped(positions, box):
     """
     Counts if the periodic
@@ -22,6 +23,7 @@ def n_unwrapped(positions, box):
     for i in range(3):
         s += np.sum(np.absolute(positions[i]) > box[i]/2.)
     return s
+
 
 def pbc(positions, box):
     box = box[0]
@@ -44,6 +46,7 @@ def pbc(positions, box):
         return p
     else:
         return pbc(p, box)
+
 
 def create_data_base(database, systems):
     """
@@ -79,6 +82,7 @@ def create_data_base(database, systems):
     cursor.close()
     connection.close()
 
+
 def chunks(data, rows = 5000):
     """
     Create chunks of data when writing data
@@ -91,6 +95,7 @@ def chunks(data, rows = 5000):
     """
     for i in range(0, len(data), rows):
         yield data[i:i+rows]
+
 
 def add_to_database(table, data, database):
     """
@@ -115,6 +120,7 @@ def add_to_database(table, data, database):
     cursor.close()
     connection.close()
 
+
 def check_vector(va, vb, box):
     """
     Make sure the molecules are moved into
@@ -132,6 +138,7 @@ def check_vector(va, vb, box):
     #Move the vector so they are in the same periodic image
     va = vb - temp_vec
     return va
+
 
 def vector_along_mol(a, b, c, box):
     """
@@ -158,6 +165,7 @@ def vector_along_mol(a, b, c, box):
     #to the third
     return (c - middle)/np.linalg.norm(c-middle)
 
+
 def vector_along_back(a, b, box):
     """
     Calculate the vector across the 
@@ -174,6 +182,7 @@ def vector_along_back(a, b, box):
 
     #get the normalized vector from a to b
     return (b - a)/np.linalg.norm(b - a)
+
 
 def vector_normal(a, b, c, box):
     """
@@ -203,6 +212,7 @@ def vector_normal(a, b, c, box):
 
     return cross
 
+
 def generate_vectors(indices, positions, box, three_atom_indices):
     """
     Wrapper function in getting the three vectors.
@@ -230,6 +240,7 @@ def generate_vectors(indices, positions, box, three_atom_indices):
     v3 = vector_normal(a, b, c, box)
     return v1, v2, v3
 
+
 def generate_empty_dict(chromo_IDs):
     """
     Creates an empty dictionary for each chromophore.
@@ -245,6 +256,7 @@ def generate_empty_dict(chromo_IDs):
         vector_dict[i] = {}
 
     return vector_dict
+
 
 def fill_dict(vector_dict, 
         chromophore_list, 
@@ -280,6 +292,7 @@ def fill_dict(vector_dict,
             vector_dict[i]['vec3'] = v3
     return vector_dict
 
+
 def identify_chains(input_dictionary, chromophore_list):
     print("Identifying chain numbers...")
     # Create a lookup table `neighbour list' for all connected atoms called {bondedAtoms}
@@ -298,15 +311,14 @@ def identify_chains(input_dictionary, chromophore_list):
     # Now map the AAID data back to the chromophores
     # Reverse the molecule_data dictionary
     reverse_lookup_dict = {value: key for key, val in molecule_data.items() for value in val}
-    chromos_in_mol = {}
+    mol_of_chromos = {}
     for chromophore in chromophore_list:
         mol_no = reverse_lookup_dict[chromophore.AAIDs[0]]
-        if mol_no not in chromos_in_mol.keys():
-            chromos_in_mol[mol_no] = [chromophore.ID]
+        if chromophore.ID not in mol_of_chromos.keys():
+            mol_of_chromos[chromophore.ID] = [mol_no]
         else:
-            chromos_in_mol[mol_no] += [chromophore.ID]
-    chromos_by_mol_list = [np.array(chromos_in_mol[index]) for index in sorted(chromos_in_mol.keys())]
-    return chromos_by_mol_list
+            mol_of_chromos[chromophore.ID] += [mol_no]
+    return mol_of_chromos
 
 
 def update_molecule(atom_ID, molecule_list, bonded_atoms):
@@ -332,6 +344,7 @@ def update_molecule(atom_ID, molecule_list, bonded_atoms):
         pass
     return molecule_list
 
+
 def get_sulfur_separation(chromo1, chromo2, relative_image, box, AA_morphology_dict):
     types1 = [AA_morphology_dict['type'][AAID] for AAID in chromo1.AAIDs]
     types2 = [AA_morphology_dict['type'][AAID] for AAID in chromo2.AAIDs]
@@ -349,14 +362,6 @@ def get_sulfur_separation(chromo1, chromo2, relative_image, box, AA_morphology_d
     separation = np.sqrt(np.sum(sulfur_pos2 - sulfur_pos1)**2)
     return separation
 
-
-def check_same_chain(molecule_list, index1, index2, mers):
-    molA = molecule_list[index1//mers]
-    if index2 in molA:
-        same = 1
-    else:
-        same = 0
-    return same
 
 def run_system(table, infile, molecule_dict, species, mers=15):
     """
@@ -403,7 +408,7 @@ def run_system(table, infile, molecule_dict, species, mers=15):
                 dE = neighbor[1]  # Get the difference in energy
                 TI = neighbor[2]  # Get the transfer integral
 
-                same_chain = check_same_chain(molecule_list, index1, index2, mers)
+                same_chain = molecule_list[index1] == molecule_list[index2]
                 if os.path.splitext(molecule_dict['database'])[0].lower() == 'p3ht':
                     sulfur_distance = get_sulfur_separation(chromophore, chromophore_list[index2], relative_image, box[0], AA_morphology_dict)
                 else:
@@ -480,6 +485,7 @@ def run_system(table, infile, molecule_dict, species, mers=15):
 
     add_to_database(table, data, molecule_dict['database']) #Write the data to the database
 
+
 def manual_load(table, infile, C1_index, C2_index):
     """
     A manual way to load in the data when we only want
@@ -493,6 +499,7 @@ def manual_load(table, infile, C1_index, C2_index):
     AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter_dict, chromophore_list = hf.load_pickle(infile)
     box = np.array([[AA_morphology_dict['lx'], AA_morphology_dict['ly'], AA_morphology_dict['lz']]])
     write_positions_to_xyz(C1_index, C2_index, chromophore_list, AA_morphology_dict, box)
+
 
 def write_positions_to_xyz(C1_index, C2_index, chromophore_list, AA_morphology_dict, box):
     """
@@ -547,6 +554,7 @@ def write_positions_to_xyz(C1_index, C2_index, chromophore_list, AA_morphology_d
     with open(filename, 'w') as f:
         f.write(to_write)
 
+
 def create_systems(subdir):
     """
     Creates a dictionary with table:
@@ -574,6 +582,7 @@ def create_systems(subdir):
         name = name.split(".")[0]
         systems[name] = directory
     return systems
+
 
 def get_molecule_dictionary(mol):
     """
