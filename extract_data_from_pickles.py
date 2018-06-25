@@ -392,7 +392,7 @@ def run_system(table, infile, molecule_dict, species, mers=15):
 
     data = []  # List for storing the calculated data
 
-    molecule_list = identify_chains(AA_morphology_dict, chromophore_list)
+    mol_lookup_dict = identify_chains(AA_morphology_dict, chromophore_list)
     sulfur_distances = []
 
     #Iterate through all the chromophores.
@@ -408,7 +408,7 @@ def run_system(table, infile, molecule_dict, species, mers=15):
                 dE = neighbor[1]  # Get the difference in energy
                 TI = neighbor[2]  # Get the transfer integral
 
-                same_chain = molecule_list[index1] == molecule_list[index2]
+                same_chain = mol_lookup_dict[index1] == mol_lookup_dict[index2]
                 if os.path.splitext(molecule_dict['database'])[0].lower() == 'p3ht':
                     sulfur_distance = get_sulfur_separation(chromophore, chromophore_list[index2], relative_image, box[0], AA_morphology_dict)
                 else:
