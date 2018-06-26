@@ -40,8 +40,6 @@ def predict_transfer_integrals(pickle, forest, species, molecule, overwrite, tra
             molecule_dict['atom_indices'])
     mol_lookup_dict = ep.identify_chains(AA_morphology_dict, chromophore_list)
 
-    comp = []#Troubleshoot
-
     print("Iterating Through Chromophores")
     for i, chromophore in enumerate(chromophore_list):
         #Only get the desired acceptor or donor index, needed for blends.
@@ -109,16 +107,9 @@ def predict_transfer_integrals(pickle, forest, species, molecule, overwrite, tra
                     train_array = np.array([[inputs[metric] for metric in list(sorted(training_metrics))]])
                     predicted_value = forest.predict(train_array)[0]
 
-                    comp.append([TI, predicted_value])
-
                     chromophore.neighbours_TI[sub_index] = predicted_value
 
     print("Run Time:", (time.time()-start_time)/60)
-    to_write = ""
-    for line in comp:
-        to_write += "{} {}\n".format(line[0], line[1])
-    with open('out.txt', 'w') as f:
-        f.writelines(to_write)
 
     hf.write_pickle((AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter_dict, chromophore_list), pickle)
 
