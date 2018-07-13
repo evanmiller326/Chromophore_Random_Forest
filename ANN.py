@@ -33,12 +33,11 @@ def plot_comparison(actual, predicted, rmse):
     plt.ylabel("Predicted")
     plt.savefig("Ann_comp.png")
 
-
-def parallel_sort(a, b):
-    temp_a = np.copy(np.array(a))
-    temp_b = np.copy(np.array(b))
-    return zip(*sorted(zip(temp_a, temp_b)))
-
+#Commented out to test if function is unused.
+#def parallel_sort(a, b):
+#    temp_a = np.copy(np.array(a))
+#    temp_b = np.copy(np.array(b))
+#    return zip(*sorted(zip(temp_a, temp_b)))
 
 def find_largest_deviations(chromo_IDs, pred_y, actual_y):
     differences = np.array(actual_y) - np.array(pred_y)
@@ -63,7 +62,6 @@ def find_largest_deviations(chromo_IDs, pred_y, actual_y):
             break
     return error_dictionary
 
-
 def plot_error_hist(error_dictionary):
     plt.figure()
     plt.hist(list(error_dictionary.keys()), bins=100)
@@ -72,9 +70,27 @@ def plot_error_hist(error_dictionary):
     plt.xlim([-0.5, 0.5])
     plt.savefig("./error_histogram_all.png")
 
-def run_net(Nlayers = 1, N_nodes= [1], training_iterations = 5e4, run_name = "", show_comparison = False, forward_hops_only = False):
+def run_net(database,
+        training,
+        validation,
+        absolute,
+        skip,
+        yval,
+        Nlayers = 1, 
+        N_nodes= [1], 
+        training_iterations = 5e4, 
+        run_name = "", 
+        show_comparison = False, 
+        forward_hops_only = False):
 
-    training_vectors, training_answers, validation_vectors, validation_answers, chromo_IDs = mlh.get_data(database = 'p3ht.db', ratio = 0.95, forward_hops_only = forward_hops_only)
+    train_features, test_features, train_labels, test_labels = mlh.get_data(
+        database=database,
+        training_tables=training,
+        validation_tables=validation,
+        absolute=absolute,
+        skip=skip,
+        yval=yval,
+    )
 
     assert Nlayers == len(N_nodes)
 
@@ -135,6 +151,21 @@ def brain(database="p3ht.db",
         Nlayers = 2,
         node_comb = [9, 1],
         steps = 2e4,
-        forward_hops_only = False
+        run_name = "",
+        forward_hops_only = False,
+        show_comparison = False, 
         ):
-    run_net(Nlayers = Nlayers, N_nodes= node_comb, training_iterations = steps, forward_hops_only = forward_hops_only)
+
+    run_net(database = database,
+            training = training,
+            validation = validation,
+            absolute = absolute,
+            skip = skip,
+            yval = yval,
+            Nlayers = Nlayers, 
+            N_nodes= node_comb, 
+            training_iterations = steps, 
+            run_name = run_name, 
+            show_comparison = show_comparison, 
+            forward_hops_only = forward_hops_only)
+

@@ -77,4 +77,4 @@ def cli_tool():
 if __name__ == "__main__":
     args = cli_tool()
     opts = vars(args)
-    ANN(Nlayers = Nlayers, N_nodes= node_comb, training_iterations = steps, forward_hops_only = forward_hops_only)
+    ANN.brain(**opts)
