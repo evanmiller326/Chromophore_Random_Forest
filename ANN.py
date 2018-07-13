@@ -4,69 +4,10 @@ import sqlite3
 
 import sklearn
 from sklearn.preprocessing import normalize
-from sklearn.preprocessing import normalize
 from sklearn import preprocessing
 
 import matplotlib.pyplot as plt
-
-def load_database(database):
-    data_list = []
-    connection = sqlite3.connect(database)
-    cursor = connection.cursor()
-    query = "SELECT name FROM sqlite_master WHERE type='table';"
-    cursor.execute(query)
-    data = cursor.fetchall()
-    for tab in data:
-        query = "select * from {};".format(tab[0])
-        cursor.execute(query)
-        data = cursor.fetchall()
-        data = np.array(data)
-        for datum in data:
-            data_list.append(datum)
-    cursor.close()
-    connection.close()
-    data = np.array(data_list)
-    return data
-
-def shuffle_data(data):
-    p = np.random.permutation(len(data))
-    return data[p]
-
-def get_data(database = 'p3ht.db', ratio = 0.95, forward_hops_only = False):
-
-    data = load_database(database)
-    data = shuffle_data(data)
-
-    chromo_IDs = data[:,:2]
-    data = data[:,2:]
-
-    if forward_hops_only is True:
-        print("ONLY CONSIDERING FORWARD HOPS")
-        chromo_IDs = list(chromo_IDs)
-        data = list(data)
-        indices_to_delete = []
-        for index, chromo_ID_pair in enumerate(chromo_IDs):
-            if chromo_ID_pair[0] > chromo_ID_pair[1]:
-                indices_to_delete.append(index)
-        indices_to_delete = sorted(indices_to_delete, reverse=True)
-        for index in indices_to_delete:
-            chromo_IDs.pop(index)
-            data.pop(index)
-        chromo_IDs = np.array(chromo_IDs)
-        data = np.array(data)
-
-    #data = shuffle_data(data)
-
-    features = data[:,:-1]
-    answers = np.array([data[:,-1]]).T
-
-    #scaler = preprocessing.StandardScaler().fit(features)
-    #features = scaler.transform(features)
-    features = normalize(features)
-
-    cut_off = int(len(data)*ratio)
-
-    return features[:cut_off,:], answers[:cut_off,:], features[cut_off:,:], answers[cut_off:,:], chromo_IDs[cut_off:,:]
+import ml_helpers as mlh
 
 def weights(input_vector, in_nodes, out_nodes):
     W = tf.random_normal(shape=[in_nodes, out_nodes], mean=0.2, stddev=0.2)
@@ -131,9 +72,9 @@ def plot_error_hist(error_dictionary):
     plt.xlim([-0.5, 0.5])
     plt.savefig("./error_histogram_all.png")
 
-def ANN(Nlayers = 1, N_nodes= [1], training_iterations = 5e4, run_name = "", show_comparison = False, forward_hops_only = False):
+def run_net(Nlayers = 1, N_nodes= [1], training_iterations = 5e4, run_name = "", show_comparison = False, forward_hops_only = False):
 
-    training_vectors, training_answers, validation_vectors, validation_answers, chromo_IDs = get_data(database = 'p3ht.db', ratio = 0.95, forward_hops_only = forward_hops_only)
+    training_vectors, training_answers, validation_vectors, validation_answers, chromo_IDs = mlh.get_data(database = 'p3ht.db', ratio = 0.95, forward_hops_only = forward_hops_only)
 
     assert Nlayers == len(N_nodes)
 
@@ -185,10 +126,15 @@ def ANN(Nlayers = 1, N_nodes= [1], training_iterations = 5e4, run_name = "", sho
     #plot_error_hist(error_dictionary)
     plot_comparison(validation_answers, pred_y, rmse)
 
-
-if __name__ == "__main__":
-    Nlayers = 2
-    node_comb = [9, 1]
-    steps = 2e4
-    forward_hops_only = False
-    ANN(Nlayers = Nlayers, N_nodes= node_comb, training_iterations = steps, forward_hops_only = forward_hops_only)
+def brain(database="p3ht.db", 
+        absolute=None, 
+        skip=[], 
+        yval="TI", 
+        training=None, 
+        validation=None,
+        Nlayers = 2,
+        node_comb = [9, 1],
+        steps = 2e4,
+        forward_hops_only = False
+        ):
+    run_net(Nlayers = Nlayers, N_nodes= node_comb, training_iterations = steps, forward_hops_only = forward_hops_only)
