@@ -83,6 +83,14 @@ def run_net(database,
         show_comparison = False, 
         forward_hops_only = False):
 
+    chromophore_ID_cols = ["chromophoreA", "chromophoreB"]
+    for chromophore_ID_col in chromophore_ID_cols:
+        if chromophore_ID_col not in skip:
+            skip.append(chromophore_ID_col)
+    # Also don't want to train on the answer!
+    if yval not in skip:
+        skip.append(yval)
+
     train_features, test_features, train_labels, test_labels = mlh.get_data(
         database=database,
         training_tables=training,
@@ -92,17 +100,19 @@ def run_net(database,
         yval=yval,
     )
 
+    train_features, test_features, train_labels, test_labels = train_features.values, test_features.values, train_labels.values, test_labels.values
+
     assert Nlayers == len(N_nodes)
 
 
-    x = tf.placeholder(tf.float32, shape = [None, len(training_vectors[0])])
+    x = tf.placeholder(tf.float32, shape = [None, len(train_features[0])])
     y_ = tf.placeholder(tf.float32, shape = [None, 1])
 
     layer_dict = {}
 
     for N in range(Nlayers):
         if N == 0:
-            layer_dict["layer_{}".format(N)] = tf.nn.relu(weights(x, len(training_vectors[0]), N_nodes[N]))
+            layer_dict["layer_{}".format(N)] = tf.nn.relu(weights(x, len(train_features[0]), N_nodes[N]))
         elif N + 1 == Nlayers:
             layer_dict["layer_{}".format(N)] = tf.nn.relu(weights(layer_dict["layer_{}".format(N-1)], N_nodes[N-1], N_nodes[N]))
         else:
@@ -123,15 +133,13 @@ def run_net(database,
     training_error = []
 
     for _ in range(int(training_iterations)):
-        batch_vectors, batch_answers = get_batch(training_vectors, training_answers)
+        batch_vectors, batch_answers = get_batch(train_features, train_labels)
         session.run(training_step,feed_dict={x:batch_vectors,y_:batch_answers})
         if _ % (int(training_iterations)//10) == 0:
 
-            train_error = session.run(cost,feed_dict={x:training_vectors,y_:training_answers})
+            train_error = session.run(cost,feed_dict={x:train_features,y_:train_labels})
             training_error.append([_, train_error])
             print(train_error)
-
-    #batch_vectors, batch_answers = get_batch(validation_vectors, validation_answers)
 
     pred_y = session.run(y_out, feed_dict={x: validation_vectors})
 
@@ -168,4 +176,3 @@ def brain(database="p3ht.db",
             run_name = run_name, 
             show_comparison = show_comparison, 
             forward_hops_only = forward_hops_only)
-
