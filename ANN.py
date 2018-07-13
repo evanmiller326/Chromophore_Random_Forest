@@ -5,6 +5,7 @@ import sqlite3
 import sklearn
 from sklearn.preprocessing import normalize
 from sklearn import preprocessing
+from scipy import stats
 
 import matplotlib.pyplot as plt
 import ml_helpers as mlh
@@ -19,18 +20,19 @@ def weights(input_vector, in_nodes, out_nodes):
 def get_batch(vectors, labels):
     indices = np.arange(len(vectors))
     np.random.shuffle(indices)
-    chosen = indices[:5000]
+    chosen = indices[:10000]
     return vectors[chosen], labels[chosen]
 
 def build_layer(x, W, b):
     return tf.add(tf.matmul(x,W),b)
 
-def plot_comparison(actual, predicted, rmse):
+def plot_comparison(actual, predicted, rmse, rsquared):
     plt.scatter(actual, predicted, zorder=0, alpha = 0.5, s=12)
-    plt.plot(np.linspace(0, np.amax(actual), 10), np.linspace(0, np.amax(actual), 10), c='k', zorder = 10)
-    plt.title("ANN-RMSE-{:.5f}".format(rmse))
+    plt.plot(np.linspace(0, np.amax(actual), 10), np.linspace(0, np.amax(actual), 10), c='k', zorder = 10, label="MAE={:.3f},\nR$^2$={:.2f}".format(rmse, rsquared))
+    #plt.title("ANN-RMSE-{:.5f}".format(rmse))
     plt.xlabel("Actual")
     plt.ylabel("Predicted")
+    plt.legend()
     plt.savefig("Ann_comp.png")
 
 #Commented out to test if function is unused.
@@ -112,11 +114,11 @@ def run_net(database,
 
     for N in range(Nlayers):
         if N == 0:
-            layer_dict["layer_{}".format(N)] = tf.nn.relu(weights(x, len(train_features[0]), N_nodes[N]))
+            layer_dict["layer_{}".format(N)] = tf.nn.elu(weights(x, len(train_features[0]), N_nodes[N]))
         elif N + 1 == Nlayers:
             layer_dict["layer_{}".format(N)] = tf.nn.relu(weights(layer_dict["layer_{}".format(N-1)], N_nodes[N-1], N_nodes[N]))
         else:
-            layer_dict["layer_{}".format(N)] = tf.nn.relu(weights(layer_dict["layer_{}".format(N-1)], N_nodes[N-1], N_nodes[N]))
+            layer_dict["layer_{}".format(N)] = tf.nn.elu(weights(layer_dict["layer_{}".format(N-1)], N_nodes[N-1], N_nodes[N]))
 
     y_out = layer_dict["layer_{}".format(Nlayers-1)]
 
@@ -141,14 +143,19 @@ def run_net(database,
             training_error.append([_, train_error])
             print(train_error)
 
-    pred_y = session.run(y_out, feed_dict={x: validation_vectors})
+    pred_y = session.run(y_out, feed_dict={x: test_features})
 
-    rmse = session.run(cost,feed_dict={x:validation_vectors,y_:validation_answers})
+    #rmse = session.run(cost,feed_dict={x:test_features,y_:test_labels})
+    mae = np.mean(abs(pred_y-test_labels))
 
-    error_dictionary = find_largest_deviations(chromo_IDs, pred_y, validation_answers)
+    slope, intercept, r_value, p_value, std_err = stats.linregress(
+        test_labels.flatten(), pred_y.flatten()
+    )
+
+    #error_dictionary = find_largest_deviations(chromo_IDs, pred_y, test_labels)
 
     #plot_error_hist(error_dictionary)
-    plot_comparison(validation_answers, pred_y, rmse)
+    plot_comparison(test_labels, pred_y, mae, r_value**2)
 
 def brain(database="p3ht.db", 
         absolute=None, 
