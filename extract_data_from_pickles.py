@@ -411,6 +411,8 @@ def run_system(table, infile, molecule_dict, species, mers=15):
                 same_chain = mol_lookup_dict[index1] == mol_lookup_dict[index2]
                 if os.path.splitext(molecule_dict['database'])[0].lower() == 'p3ht':
                     sulfur_distance = get_sulfur_separation(chromophore, chromophore_list[index2], relative_image, box[0], AA_morphology_dict)
+                elif os.path.splitext(molecule_dict['database'])[0].lower() == 'p3ht_pdi':
+                    sulfur_distance = get_sulfur_separation(chromophore, chromophore_list[index2], relative_image, box[0], AA_morphology_dict)
                 else:
                     sulfur_distance = 0
 
@@ -599,6 +601,9 @@ def get_molecule_dictionary(mol):
     molecules = {'p3ht':{'database':'p3ht.db',
                          'subdir':'training_data/P3HT/*.pickle',
                          'atom_indices':[0, 1, 3]},
+                         'p3ht_pdi':{'database':'p3ht_pdi.db',
+                         'subdir':'training_data/P3HT_PDI/*.pickle',
+                         'atom_indices':[0, 1, 3]},
                  'dbp':{'database':'dbp.db',
                         'subdir':'training_data/DBP/*.pickle',
                         'atom_indices':[0, 20, 38]},
@@ -692,6 +697,7 @@ def main():
     molecule = args.molecule.lower()
 
     rename_input_pickles(os.path.join('training_data', args.molecule))
+
     molecule_dict = get_molecule_dictionary(molecule)
 
     if args.pickle is None:

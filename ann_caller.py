@@ -73,7 +73,6 @@ def cli_tool():
     args = parser.parse_args()
     return args
 
-
 if __name__ == "__main__":
     args = cli_tool()
     opts = vars(args)

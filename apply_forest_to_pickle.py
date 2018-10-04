@@ -56,6 +56,8 @@ def predict_transfer_integrals(pickle, forest, species, molecule, overwrite, tra
                 inputs['same_chain'] = mol_lookup_dict[index1] == mol_lookup_dict[index2]
                 if os.path.splitext(molecule_dict['database'])[0].lower() == 'p3ht':
                     inputs['sulfur_distance'] = ep.get_sulfur_separation(chromophore, chromophore_list[index2], relative_image, box[0], AA_morphology_dict)
+                elif os.path.splitext(molecule_dict['database'])[0].lower() == 'p3ht_pdi':
+                    inputs['sulfur_distance'] = ep.get_sulfur_separation(chromophore, chromophore_list[index2], relative_image, box[0], AA_morphology_dict)
                 else:
                     inputs['sulfur_distance'] = 0
 
@@ -170,7 +172,7 @@ def main():
 
     training_metrics = ['posX', 'posY', 'posZ', 'rotX', 'rotY', 'rotZ', 'deltaE', 'same_chain', 'sulfur_distance']
     if args.exclude != None:
-        for metric in exlude:
+        for metric in args.exclude:
             try:
                 training_metrics.pop(metric)
             except:
