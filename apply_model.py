@@ -1,7 +1,7 @@
 import matplotlib
 matplotlib.use('agg')
 from sklearn.externals import joblib
-import random_forest as rf
+import ml_helpers as mlh
 import numpy as np
 import pandas as pd
 from scipy import stats
@@ -44,7 +44,7 @@ def plot_actual_vs_predicted(test_labels, predictions, r_value, abserr, test_fea
 
 def run_table(table, reg):
 
-    temp_features, test_features, train_labels, test_labels = rf.get_data(database="p3ht.db", training_tables=[table], validation_tables=[table], absolute=["rotX", "rotY", "rotZ", "posX", "posY", "posZ", "deltaE"], skip=["TI"])
+    temp_features, test_features, train_labels, test_labels = mlh.get_data(database="p3ht.db", training_tables=[table], validation_tables=[table], absolute=["rotX", "rotY", "rotZ", "posX", "posY", "posZ", "deltaE"], skip=["TI"])
 
     test_features = test_features.drop(["chromophoreA","chromophoreB"], axis=1)
     print("making temp")
