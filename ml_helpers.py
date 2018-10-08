@@ -53,6 +53,7 @@ def get_data(database="p3ht.db", training_tables=None, validation_tables=None,
 def create_data_frames(data, absolute, all_column_names, column_names_to_use,
                        yval):
     df = pd.DataFrame(data, columns=all_column_names)
+    df = df.sort_index(axis=1)
 
     if absolute is not None:
         for col_name in absolute:

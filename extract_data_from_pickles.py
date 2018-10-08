@@ -601,7 +601,7 @@ def get_molecule_dictionary(mol):
     molecules = {'p3ht':{'database':'p3ht.db',
                          'subdir':'training_data/P3HT/*.pickle',
                          'atom_indices':[0, 1, 3]},
-                         'p3ht_pdi':{'database':'p3ht_pdi.db',
+                 'p3ht_pdi':{'database':'p3ht_pdi.db',
                          'subdir':'training_data/P3HT_PDI/*.pickle',
                          'atom_indices':[0, 1, 3]},
                  'dbp':{'database':'dbp.db',
