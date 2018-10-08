@@ -158,8 +158,6 @@ def wood_chipper(database="p3ht.db", absolute=None, skip=[], yval="TI", training
     if yval not in skip:
         skip.append(yval)
 
-    # compare_four()
-
     train_features, test_features, train_labels, test_labels = mlh.get_data(
         database=database,
         training_tables=training,
