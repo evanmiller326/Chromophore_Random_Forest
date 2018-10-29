@@ -121,7 +121,7 @@ def plot_actual_vs_predicted(test_labels, predictions, r_value, abserr, name="")
     plt.xlabel("Actual (eV)")
     plt.ylabel("Predicted (eV)")
 
-    #plt.title("{}Act. v. Pred.".format(name))
+    plt.title("{}".format(name))
 
     plt.savefig("{}comparison.png".format(name))
     plt.savefig("{}comparison.pdf".format(name))
@@ -174,6 +174,8 @@ def wood_chipper(database="p3ht.db", absolute=None, skip=[], yval="TI", training
     # Stitch the training and testing data by concatenating along
     # axis = 0
     df = pd.concat([df_train, df_test], axis=0)
+
+    print(train_features)
 
     reg = normal_run(train_features, train_labels)
 

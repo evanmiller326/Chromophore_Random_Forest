@@ -74,7 +74,7 @@ def create_data_base(database, systems):
         to_execute += "rotY REAL, "
         to_execute += "rotZ REAL, "
         to_execute += "deltaE REAL, "
-        to_execute += "same_chain INT, "
+        to_execute += "bonded INT, "
         to_execute += "sulfur_distance REAL, "
         to_execute += "TI REAL"
         to_execute += ");"
@@ -111,11 +111,11 @@ def add_to_database(table, data, database):
     cursor = connection.cursor()
     div_data = chunks(data)
     for chunk in div_data:
-        for chromophoreA, chromophoreB, posX, posY, posZ, rotX, rotY, rotZ, deltaE, same_chain, sulfur_distance, TI in chunk:
+        for chromophoreA, chromophoreB, posX, posY, posZ, rotX, rotY, rotZ, deltaE, bonded, sulfur_distance, TI in chunk:
             if (deltaE is None) or (TI is None):
                 continue
             query = "INSERT INTO {} VALUES( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);".format(table)
-            cursor.execute(query, (chromophoreA, chromophoreB, posX, posY, posZ, rotX, rotY, rotZ, deltaE, same_chain, sulfur_distance, TI))
+            cursor.execute(query, (chromophoreA, chromophoreB, posX, posY, posZ, rotX, rotY, rotZ, deltaE, bonded, sulfur_distance, TI))
     connection.commit()
     cursor.close()
     connection.close()
@@ -292,7 +292,34 @@ def fill_dict(vector_dict,
             vector_dict[i]['vec3'] = v3
     return vector_dict
 
+def purge_intra_chromophore_bonds(bond_list, chromophore_list):
+    all_intra_chromophore_bonds = [tuple(bond) for chromophore in chromophore_list for bond in chromophore.bonds]
+    all_bonds = [tuple(bond) for bond in bond_list]
+    inter_chromophore_bonds = set(all_intra_chromophore_bonds).symmetric_difference(set(all_bonds))
+    return [list(bond) for bond in inter_chromophore_bonds]
 
+def find_bonded_chromophores(input_dictionary, chromophore_list):
+    inter_chromophore_bonds = purge_intra_chromophore_bonds(input_dictionary['bond'], chromophore_list)
+
+    chromophore_id_list = list(range(len(input_dictionary['type'])))
+    for i, chromophore in enumerate(chromophore_list):
+        for a_id in chromophore.AAIDs:
+            chromophore_id_list[a_id] = i
+
+    bonded_chromophores_dict = {}
+    for chromo in set(chromophore_id_list):
+        bonded_chromophores_dict[chromo] = []
+
+    for bond in inter_chromophore_bonds:
+        chromophore1 = chromophore_id_list[bond[1]]
+        chromophore2 = chromophore_id_list[bond[2]]
+        bonded_chromophores_dict[chromophore1].append(chromophore2)
+        bonded_chromophores_dict[chromophore2].append(chromophore1)
+
+    return bonded_chromophores_dict
+
+"""
+Shouldn't be needed. Commenting out for now. (10-16-18)
 def identify_chains(input_dictionary, chromophore_list):
     print("Identifying chain numbers...")
     # Create a lookup table `neighbour list' for all connected atoms called {bondedAtoms}
@@ -343,6 +370,7 @@ def update_molecule(atom_ID, molecule_list, bonded_atoms):
         # This means that there are no bonded CG sites (i.e. it's a single molecule)
         pass
     return molecule_list
+"""
 
 
 def get_sulfur_separation(chromo1, chromo2, relative_image, box, AA_morphology_dict):
@@ -392,7 +420,7 @@ def run_system(table, infile, molecule_dict, species, mers=15):
 
     data = []  # List for storing the calculated data
 
-    mol_lookup_dict = identify_chains(AA_morphology_dict, chromophore_list)
+    bonded_chromophores_dict = find_bonded_chromophores(AA_morphology_dict, chromophore_list)
     sulfur_distances = []
 
     #Iterate through all the chromophores.
@@ -408,7 +436,7 @@ def run_system(table, infile, molecule_dict, species, mers=15):
                 dE = neighbor[1]  # Get the difference in energy
                 TI = neighbor[2]  # Get the transfer integral
 
-                same_chain = mol_lookup_dict[index1] == mol_lookup_dict[index2]
+                bonded = index2 in bonded_chromophores_dict[i] 
                 if os.path.splitext(molecule_dict['database'])[0].lower() == 'p3ht':
                     sulfur_distance = get_sulfur_separation(chromophore, chromophore_list[index2], relative_image, box[0], AA_morphology_dict)
                 elif os.path.splitext(molecule_dict['database'])[0].lower() == 'p3ht_pdi':
@@ -477,7 +505,7 @@ def run_system(table, infile, molecule_dict, species, mers=15):
                         rotY,
                         rotZ,
                         dE,
-                        same_chain,
+                        bonded,
                         sulfur_distance,
                         TI])
 
