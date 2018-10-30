@@ -150,7 +150,8 @@ def model_analysis(predictions, test_labels, df):
 def wood_chipper(database="p3ht.db", absolute=None, skip=[], yval="TI", training=None, validation=None):
 
     # Don't want to train on the chromophore_IDs!
-    chromophore_ID_cols = ["chromophoreA", "chromophoreB"]
+    chromophore_ID_cols = []
+    #chromophore_ID_cols = ["chromophoreA", "chromophoreB"]
     for chromophore_ID_col in chromophore_ID_cols:
         if chromophore_ID_col not in skip:
             skip.append(chromophore_ID_col)
