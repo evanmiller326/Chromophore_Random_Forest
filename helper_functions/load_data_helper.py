@@ -3,8 +3,15 @@ import pandas as pd
 import sqlite3
 from sklearn.model_selection import train_test_split
 
-def get_data(database="p3ht.db", training_tables=None, validation_tables=None,
-             absolute=None, skip=[], yval="TI"):
+
+def get_data(
+    database="p3ht.db",
+    training_tables=None,
+    validation_tables=None,
+    absolute=None,
+    skip=[],
+    yval="TI",
+):
     training_records = []
     print("".join(["Loading data from ", database, "..."]))
     # Obtain training tables first:
@@ -23,11 +30,13 @@ def get_data(database="p3ht.db", training_tables=None, validation_tables=None,
         for record in data:
             training_records.append(record)
     column_names_to_use = list(set(all_column_names) - set(skip))
-    train_features, train_labels = create_data_frames(np.array(training_records),
-                                                      absolute,
-                                                      all_column_names,
-                                                      column_names_to_use,
-                                                      yval)
+    train_features, train_labels = create_data_frames(
+        np.array(training_records),
+        absolute,
+        all_column_names,
+        column_names_to_use,
+        yval,
+    )
     print("Separating training and test data...")
     if validation_tables is None:
         # Split the dataset we have to be 95%:5%
@@ -39,11 +48,13 @@ def get_data(database="p3ht.db", training_tables=None, validation_tables=None,
             data, _ = load_table(database, table_name)
             for record in data:
                 validation_records.append(record)
-        test_features, test_labels = create_data_frames(np.array(validation_records),
-                                                        absolute,
-                                                        all_column_names,
-                                                        column_names_to_use,
-                                                        yval)
+        test_features, test_labels = create_data_frames(
+            np.array(validation_records),
+            absolute,
+            all_column_names,
+            column_names_to_use,
+            yval,
+        )
 
     test_features.sort_index(axis=1, inplace=True)
     train_features.sort_index(axis=1, inplace=True)
@@ -51,8 +62,7 @@ def get_data(database="p3ht.db", training_tables=None, validation_tables=None,
     return train_features, test_features, train_labels, test_labels
 
 
-def create_data_frames(data, absolute, all_column_names, column_names_to_use,
-                       yval):
+def create_data_frames(data, absolute, all_column_names, column_names_to_use, yval):
     df = pd.DataFrame(data, columns=all_column_names)
     df = df.sort_index(axis=1)
 
