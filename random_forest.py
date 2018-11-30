@@ -69,7 +69,7 @@ def random_search(train_features, test_features, train_labels, test_labels):
 def normal_run(train_features, train_labels):
     print("Setting up the regression.")
     reg = RandomForestRegressor()
-    # reg = RandomForestRegressor(max_features = 'sqrt', min_samples_leaf = 1, bootstrap=True, max_depth=30, min_samples_split=5, n_estimators = 733)
+#    reg = RandomForestRegressor(max_features = 'sqrt', min_samples_leaf = 1, bootstrap=True, max_depth=30, min_samples_split=5, n_estimators = 733)
     print("Starting Training.")
     reg.fit(train_features, train_labels)
     return reg
@@ -138,8 +138,10 @@ def model_analysis(predictions, test_labels, df):
 
     df["predicted"] = df[["errors", "TI"]].sum(axis=1)
 
+    df["errors"] = df['errors'].abs()
+
     print("Mean Deviation =", df["errors"].mean())
-    print(df.nlargest(10, "errors"))
+    print(df.nlargest(40, "errors"))
 
     #rmse = mean_squared_error(test_labels, predictions)
     abserr = np.mean(abs(test_labels.values - predictions))
@@ -150,8 +152,7 @@ def model_analysis(predictions, test_labels, df):
 def wood_chipper(database="p3ht.db", absolute=None, skip=[], yval="TI", training=None, validation=None):
 
     # Don't want to train on the chromophore_IDs!
-    chromophore_ID_cols = []
-    #chromophore_ID_cols = ["chromophoreA", "chromophoreB"]
+    chromophore_ID_cols = ["chromophoreA", "chromophoreB"]
     for chromophore_ID_col in chromophore_ID_cols:
         if chromophore_ID_col not in skip:
             skip.append(chromophore_ID_col)
@@ -174,7 +175,8 @@ def wood_chipper(database="p3ht.db", absolute=None, skip=[], yval="TI", training
     df_test = pd.concat([test_features, test_labels], axis=1)
     # Stitch the training and testing data by concatenating along
     # axis = 0
-    df = pd.concat([df_train, df_test], axis=0)
+    df = df_test
+    #df = pd.concat([df_train, df_test], axis=0)
 
     print(train_features)
 

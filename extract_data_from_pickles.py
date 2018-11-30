@@ -76,6 +76,7 @@ def create_data_base(database, systems):
         to_execute += "deltaE REAL, "
         to_execute += "bonded INT, "
         to_execute += "sulfur_distance REAL, "
+        to_execute += "distance REAL, "
         to_execute += "TI REAL"
         to_execute += ");"
         cursor.execute(to_execute)
@@ -111,11 +112,11 @@ def add_to_database(table, data, database):
     cursor = connection.cursor()
     div_data = chunks(data)
     for chunk in div_data:
-        for chromophoreA, chromophoreB, posX, posY, posZ, rotX, rotY, rotZ, deltaE, bonded, sulfur_distance, TI in chunk:
+        for chromophoreA, chromophoreB, posX, posY, posZ, rotX, rotY, rotZ, deltaE, bonded, sulfur_distance, distance, TI in chunk:
             if (deltaE is None) or (TI is None):
                 continue
-            query = "INSERT INTO {} VALUES( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);".format(table)
-            cursor.execute(query, (chromophoreA, chromophoreB, posX, posY, posZ, rotX, rotY, rotZ, deltaE, bonded, sulfur_distance, TI))
+            query = "INSERT INTO {} VALUES( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);".format(table)
+            cursor.execute(query, (chromophoreA, chromophoreB, posX, posY, posZ, rotX, rotY, rotZ, deltaE, bonded, sulfur_distance, distance, TI))
     connection.commit()
     cursor.close()
     connection.close()
@@ -385,9 +386,10 @@ def get_sulfur_separation(chromo1, chromo2, relative_image, box, AA_morphology_d
         sulfur_index2 = types2.index('S1')
     sulfur_pos1 = np.array(AA_morphology_dict['position'][chromo1.AAIDs[sulfur_index1]])
     sulfur_pos2 = np.array(AA_morphology_dict['position'][chromo2.AAIDs[sulfur_index2]])
-    pre_pbc_separation = np.sqrt(np.sum(sulfur_pos2 - sulfur_pos1)**2)
+    #pre_pbc_separation = np.sqrt(np.sum(sulfur_pos2 - sulfur_pos1)**2)
     sulfur_pos1 = check_vector(sulfur_pos1, sulfur_pos2, [box])
-    separation = np.sqrt(np.sum(sulfur_pos2 - sulfur_pos1)**2)
+    #separation = np.sqrt(np.sum(sulfur_pos2 - sulfur_pos1)**2)
+    separation = np.linalg.norm(sulfur_pos2 - sulfur_pos1)
     return separation
 
 
@@ -495,6 +497,8 @@ def run_system(table, infile, molecule_dict, species, mers=15):
                     posX = centers_vec[0]
                     posY = centers_vec[1]
                     posZ = centers_vec[2]
+
+                    distance = np.linalg.norm(centers_vec)
                     #Combine the data into an array
                     datum = np.array([index1,
                         index2,
@@ -507,6 +511,7 @@ def run_system(table, infile, molecule_dict, species, mers=15):
                         dE,
                         bonded,
                         sulfur_distance,
+                        distance,
                         TI])
 
                     data.append(datum) #Write the data to the list

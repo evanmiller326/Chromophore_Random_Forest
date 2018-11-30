@@ -38,7 +38,7 @@ def predict_transfer_integrals(pickle, forest, species, molecule, overwrite, tra
             box, 
             species, 
             molecule_dict['atom_indices'])
-    mol_lookup_dict = ep.identify_chains(AA_morphology_dict, chromophore_list)
+    bonded_chromophores_dict = ep.find_bonded_chromophores(AA_morphology_dict, chromophore_list)
 
     print("Iterating Through Chromophores")
     for i, chromophore in enumerate(chromophore_list):
@@ -53,7 +53,7 @@ def predict_transfer_integrals(pickle, forest, species, molecule, overwrite, tra
                 inputs['deltaE'] = n_deltaE  # Get the difference in energy
                 TI = n_TI  # Get the transfer integral
 
-                inputs['same_chain'] = mol_lookup_dict[index1] == mol_lookup_dict[index2]
+                inputs['bonded'] = index2 in bonded_chromophores_dict[i] 
                 if os.path.splitext(molecule_dict['database'])[0].lower() == 'p3ht':
                     inputs['sulfur_distance'] = ep.get_sulfur_separation(chromophore, chromophore_list[index2], relative_image, box[0], AA_morphology_dict)
                 elif os.path.splitext(molecule_dict['database'])[0].lower() == 'p3ht_pdi':
@@ -98,6 +98,7 @@ def predict_transfer_integrals(pickle, forest, species, molecule, overwrite, tra
                     inputs['posX'] = centers_vec[0]
                     inputs['posY'] = centers_vec[1]
                     inputs['posZ'] = centers_vec[2]
+                    inputs['distance'] = np.linalg.norm(centers_vec)
                     #Combine the data into an array
 
                     for metric in absolute:
@@ -170,13 +171,15 @@ def main():
 
     args, input_list = parser.parse_known_args()
 
-    training_metrics = ['posX', 'posY', 'posZ', 'rotX', 'rotY', 'rotZ', 'deltaE', 'same_chain', 'sulfur_distance']
+    training_metrics = ['posX', 'posY', 'posZ', 'rotX', 'rotY', 'rotZ', 'deltaE', 'bonded', 'sulfur_distance', 'distance']
     if args.exclude != None:
         for metric in args.exclude:
             try:
-                training_metrics.pop(metric)
+                training_metrics.remove(metric)
             except:
                 print("Tried to exclude metric not found in training_metrics!")
+
+    print(training_metrics)
 
     absolute = ['posX', 'posY', 'posZ', 'rotX', 'rotY', 'rotZ', 'deltaE']
     if args.absolute:
