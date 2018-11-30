@@ -4,3 +4,11 @@ training_data
 *.pdf
 *.xyz
 *.npy
+*.pkl
+*.bib
+*.DS_Store
+*__pycache__*
+*.h5
+*.csv
+*ipynb_checkpoints
+temp_scripts/*
