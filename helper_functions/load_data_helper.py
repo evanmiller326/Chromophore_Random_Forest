@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import sqlite3
+from sklearn.model_selection import train_test_split
 
 def get_data(database="p3ht.db", training_tables=None, validation_tables=None,
              absolute=None, skip=[], yval="TI"):
@@ -76,4 +77,3 @@ def load_table(database, table):
     cursor.close()
     connection.close()
     return np.array(data), column_names
-
