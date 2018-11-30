@@ -1,19 +1,18 @@
-import argparse
 import numpy as np
-import sqlite3
 import pandas as pd
 import matplotlib.pyplot as plt
 from pandas.tools.plotting import scatter_matrix
-from scipy import stats
 
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.metrics import mean_squared_error
 
 from sklearn.tree import export_graphviz
 import pydot
 
 from sklearn.externals import joblib
-import ml_helpers as mlh
+
+from helper_functions import load_data_helper as ldh
+from helper_functions import general_helpers as gh
+from helper_functions import plotter_helper as ph
 
 
 def plot_tree(reg):
@@ -83,56 +82,13 @@ def get_biggest_discrepencies(predicted, actual, errors):
     print(comparison)
 
 
-def make_plots(test_labels, predictions, test_features, features):
-    for feature in features:
-        plt.close()
-        colors = abs(test_features[feature].values)
-        colors /= np.amax(colors)
-        plt.scatter(
-            test_labels, predictions, s=12, alpha=0.5, zorder=0, c=colors, cmap="jet"
-        )
-        plt.plot(
-            np.linspace(0, np.amax(test_labels.values), 10),
-            np.linspace(0, np.amax(test_labels.values), 10),
-            c="k",
-            zorder=10,
-        )
-        plt.colorbar()
-        plt.ylabel("Predicted TI")
-        plt.xlabel("Actual TI")
-        plt.title("{}".format(feature))
-        plt.savefig("{}_comparison.png".format(feature))
-
-def plot_actual_vs_predicted(test_labels, predictions, r_value, abserr, name=""):
-    plt.close()
-    plt.plot(
-        np.linspace(0, np.amax(test_labels.values), 10),
-        np.linspace(0, np.amax(test_labels.values), 10),
-        alpha=0.5,
-        c="k",
-        zorder=10,
-        label=r"R$^2$={:.2f}, MAE={:.0f} meV".format(r_value ** 2, abserr * 1000),
-    )
-    plt.scatter(test_labels.values, predictions, s=12, alpha=0.5, zorder=0)
-    plt.legend(fontsize=20)
-    plt.xticks([0.0, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5])
-    plt.yticks([0.0, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5])
-
-    plt.xlabel("Actual (eV)")
-    plt.ylabel("Predicted (eV)")
-
-    plt.title("{}".format(name))
-
-    plt.savefig("{}comparison.png".format(name))
-    plt.savefig("{}comparison.pdf".format(name))
-
 def model_analysis(predictions, test_labels, df):
     '''
     Measure how well the model performs
     '''
-    slope, intercept, r_value, p_value, std_err = stats.linregress(
-        test_labels.values.flatten(), predictions.flatten()
-    )
+
+    r_value, mae = gh.calc_comparison(test_labels.values, predictions)
+
     print("Calculating error.")
     df["errors"] = predictions - test_labels
 
@@ -143,10 +99,7 @@ def model_analysis(predictions, test_labels, df):
     print("Mean Deviation =", df["errors"].mean())
     print(df.nlargest(40, "errors"))
 
-    #rmse = mean_squared_error(test_labels, predictions)
-    abserr = np.mean(abs(test_labels.values - predictions))
-
-    return abserr, r_value
+    return mae, r_value
 
 # Needs a fun name
 def wood_chipper(database="p3ht.db", absolute=None, skip=[], yval="TI", training=None, validation=None):
@@ -160,7 +113,7 @@ def wood_chipper(database="p3ht.db", absolute=None, skip=[], yval="TI", training
     if yval not in skip:
         skip.append(yval)
 
-    train_features, test_features, train_labels, test_labels = mlh.get_data(
+    train_features, test_features, train_labels, test_labels = ldh.get_data(
         database=database,
         training_tables=training,
         validation_tables=validation,
@@ -189,11 +142,9 @@ def wood_chipper(database="p3ht.db", absolute=None, skip=[], yval="TI", training
     print("Making predictions on tests")
     predictions = np.array([reg.predict(test_features)]).T
 
-    abserr, r_value = model_analysis(predictions, test_labels, df)
+    mae, r_value = model_analysis(predictions, test_labels, df)
 
-    plot_actual_vs_predicted(test_labels, predictions, r_value, abserr)
-
-    # make_plots(test_labels, predictions, test_features, features)
+    ph.plot_based_on_density(test_labels.flatten(), predictions.flatten(), "ANN", r_value**2, mae, save=True)
 
     feature_importances = pd.DataFrame(
         reg.feature_importances_, index=train_features.columns, columns=["Importance"]
@@ -201,13 +152,11 @@ def wood_chipper(database="p3ht.db", absolute=None, skip=[], yval="TI", training
 
     # get_biggest_discrepencies(predictions, test_labels, errors)
 
-    # df.hist(bins = 50, figsize = (14, 12))
-    # plt.savefig('hist.pdf')
-    # plt.close()
     corr_matrix = df.corr()
     print(corr_matrix["TI"].sort_values(ascending=False))
     # scatter_matrix(df, figsize = (12,12), alpha = 0.2)
     # plt.savefig('scatter_matrix.png')
+
     # This will overwrite your old store.h5 file!
     with pd.HDFStore('store.h5', mode='w') as store:
         store['train_features'] = train_features
