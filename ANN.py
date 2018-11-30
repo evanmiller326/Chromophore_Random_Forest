@@ -32,7 +32,8 @@ def convolve(x, n_filters, outsize):
     W = tf.random_normal(shape=[size, outsize], mean=0.2, stddev=0.2)
     b = tf.random_normal(shape=[outsize], mean = 0.2, stddev = 0.2)
 
-    xconv = tf.nn.tanh(tf.add(tf.matmul(pool, W), b))
+    xconv = tf.nn.relu(tf.add(tf.matmul(pool, W), b))
+ #   xconv = tf.nn.tanh(tf.add(tf.matmul(pool, W), b))
 
     return xconv
 
@@ -112,7 +113,7 @@ def run_net(database,
         run_name = "", 
         show_comparison = False, 
         nfilters = 27,
-        convolution_outsize = 9,
+        convolution_outsize = 10,
         forward_hops_only = False):
 
     chromophore_ID_cols = ["chromophoreA", "chromophoreB"]
@@ -200,7 +201,7 @@ def brain(database="p3ht.db",
         training=None, 
         validation=None,
         Nlayers = 3,
-        node_comb = [9, 5, 1],
+        node_comb = [10, 5, 1],
         steps = 2e4,
         run_name = "",
         forward_hops_only = False,
