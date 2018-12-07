@@ -99,22 +99,22 @@ def run_net(
 
     layer_dict = {}
 
-    xconv = ANN.convolve(x, nfilters, convolution_outsize)
+    xconv = convolve(x, nfilters, N_nodes[0])
 
     for N in range(Nlayers):
         if N == 0:
             layer_dict["layer_{}".format(N)] = tf.nn.elu(
-                ANN.weights(x, convolution_outsize, N_nodes[N])
+                weights(x, N_nodes[0], N_nodes[N])
             )
         elif N + 1 == Nlayers:
             layer_dict["layer_{}".format(N)] = tf.nn.elu(
-                ANN.weights(
+                weights(
                     layer_dict["layer_{}".format(N - 1)], N_nodes[N - 1], N_nodes[N]
                 )
             )
         else:
             layer_dict["layer_{}".format(N)] = tf.nn.elu(
-                ANN.weights(
+                weights(
                     layer_dict["layer_{}".format(N - 1)], N_nodes[N - 1], N_nodes[N]
                 )
             )
@@ -132,7 +132,7 @@ def run_net(
     training_error = []
 
     for _ in range(int(training_iterations)):
-        batch_vectors, batch_answers = ANN.get_batch(train_features, train_labels)
+        batch_vectors, batch_answers = get_batch(train_features, train_labels)
         session.run(training_step, feed_dict={x: batch_vectors, y_: batch_answers})
         if _ % (int(training_iterations) // 10) == 0:
 
@@ -143,11 +143,5 @@ def run_net(
             print(train_error)
 
     pred_y = session.run(y_out, feed_dict={x: test_features})
-
-    mae = np.mean(abs(pred_y - test_labels))
-
-    slope, intercept, r_value, p_value, std_err = stats.linregress(
-        test_labels.flatten(), pred_y.flatten()
-    )
 
     return pred_y

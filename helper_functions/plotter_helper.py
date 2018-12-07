@@ -4,7 +4,7 @@ from os import mkdir
 import numpy as np
 
 def plot_actual_vs_predicted(
-    actual, predicted, r_value=0.0, abserr=0.0, name="Act. v Pred.", save=True
+    actual, predicted, r_value=0.0, abserr=0.0, name="Act. v Pred.", save=True, plot_by_feature = False
 ):
     """
     actual: array for the actual transfer integrals
@@ -14,6 +14,8 @@ def plot_actual_vs_predicted(
     name: string for plot title
     save: bool to save or show the plot
     """
+    actual = actual.flatten()
+    predicted = predicted.flatten()
 
     fig, ax = plt.subplots()
     ax.plot(
@@ -24,7 +26,12 @@ def plot_actual_vs_predicted(
         zorder=10,
         label=r"R$^2$={:.2f}, MAE={:.0f} meV".format(r_value ** 2, abserr * 1000),
     )
-    ax.scatter(actual, predicted, s=12, alpha=0.5, zorder=0)
+    
+    if not isinstance(plot_by_feature, bool):
+        plot_by_feature = plot_by_feature.flatten()
+        ax.scatter(actual, predicted, s=12, alpha=0.5, zorder=0, c = plot_by_feature, cmap = 'viridis', vmin = np.min([actual, predicted]), vmax = np.amax([actual, predicted]))
+    else:
+        ax.scatter(actual, predicted, s=12, alpha=0.5, zorder=0)
     ax.legend(fontsize=20)
     ax.set_xticks([0.0, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5])
     ax.set_yticks([0.0, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5])
@@ -56,18 +63,23 @@ def plot_based_on_density(actual, predicted, title, r_value=0.0, mae=0.0, save=T
     """
     from matplotlib.colors import LogNorm
     from matplotlib import cm
+    
+    print("Edited in jupyter.")
+    
+    actual = actual.flatten()
+    predicted = predicted.flatten()
 
     print("Plotting Actual vs. Predicted 2D Map.")
 
     fig, ax = plt.subplots()
 
+    plt.hist2d(actual, predicted, (50, 50), norm=LogNorm(), cmap="viridis")
+    plt.colorbar()
+    
     rgba = cm.get_cmap("viridis")
     rgba = rgba(0.0)
 
     ax.set_facecolor(rgba)
-
-    plt.hist2d(actual, predicted, (50, 50), norm=LogNorm(), cmap="viridis")
-    plt.colorbar()
 
     ax.plot(
         np.linspace(0, np.amax(actual), 10),
